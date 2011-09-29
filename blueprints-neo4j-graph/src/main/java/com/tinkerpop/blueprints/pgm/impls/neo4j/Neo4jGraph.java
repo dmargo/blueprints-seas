@@ -36,6 +36,16 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
+	
+    final private static Map<String, String> configuration = new HashMap<String, String>();
+
+    static {
+        configuration.put("neostore.nodestore.db.mapped_memory", "52M");
+        configuration.put("neostore.relationshipstore.db.mapped_memory", "51M");
+        configuration.put("neostore.propertystore.db.mapped_memory", "51M");
+        configuration.put("neostore.propertystore.db.strings.mapped_memory", "51M");
+        configuration.put("neostore.propertystore.db.arrays.mapped_memory", "51M");
+    }
 
     private GraphDatabaseService rawGraph;
     private final ThreadLocal<Transaction> tx = new ThreadLocal<Transaction>() {
@@ -86,7 +96,7 @@ public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
                 else
                     this.rawGraph = new EmbeddedGraphDatabase(directory, configuration);
             else
-                this.rawGraph = new EmbeddedGraphDatabase(directory);
+                this.rawGraph = new EmbeddedGraphDatabase(directory, Neo4jGraph.configuration);
 
             if (fresh) {
                 // remove reference node

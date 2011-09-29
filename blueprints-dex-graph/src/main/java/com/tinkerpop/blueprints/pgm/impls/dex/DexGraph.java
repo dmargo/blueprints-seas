@@ -96,10 +96,11 @@ public class DexGraph implements IndexableGraph {
             final File db = new File(fileName);
             boolean create = !db.exists();
             this.db = db;
-            //DEX.Config cfg = new DEX.Config();
-            //cfg.setCacheMaxSize(0); // use as much memory as possible
-            //dex = new DEX(cfg);
-            dex = new DEX();
+            DEX.Config cfg = new DEX.Config();
+            cfg.setCacheMaxSize(256); // use as much memory as possible
+            cfg.setLicense("3YS9Q-99ATW-F179G-5HWTW");
+            dex = new DEX(cfg);
+            //dex = new DEX();
             gpool = (create ? dex.create(db) : dex.open(db));
             session = gpool.newSession();
             rawGraph = session.getDbGraph();

@@ -33,7 +33,6 @@ public class SqlGraphTest extends GraphTest {
         printTestPerformance("SqlBenchmarkTestSuite", this.stopWatch());
     }*/
     
-    
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new VertexTestSuite(this));
@@ -57,13 +56,13 @@ public class SqlGraphTest extends GraphTest {
         doTestSuite(new GraphMLReaderTestSuite(this));
         printTestPerformance("GraphMLReaderTestSuite", this.stopWatch());
     }
-    /*
+
     public void testShortestPaths() throws Exception {
         this.stopWatch();
     	doTestSuite(new SqlPathTestSuite(this));
         printTestPerformance("SqlPathTestSuite", this.stopWatch());	
-    }*/
-
+    }
+    
     /*public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new TransactionalGraphTestSuite(this));

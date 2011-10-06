@@ -39,7 +39,19 @@ public class SqlGraph implements Graph {
 	            		"outid bigint unsigned not null references vertex(vid)," +
 	            		"inid bigint unsigned not null references vertex(vid)," +
 	            		"label varchar(255))");
-            
+            statement.executeUpdate(
+                        "drop index outid_index on edge");
+            statement.executeUpdate(
+                        "drop index inid_index on edge");
+            statement.executeUpdate(
+                        "drop index label_index on edge");
+            statement.executeUpdate(
+                        "create index outid_index on edge (outid)");
+            statement.executeUpdate(
+                        "create index inid_index on edge (inid)");
+            statement.executeUpdate(
+                        "create index label_index on edge (label)");
+
             // Create property tables.
             statement.executeUpdate(
             		"create table if not exists vertexproperty(" +
@@ -47,6 +59,10 @@ public class SqlGraph implements Graph {
 	            		"pkey varchar(255) not null," +
 	            		"value blob," +
 	            		"unique(vid,pkey))");
+            statement.executeUpdate(
+                        "drop index
+            statement.executeUpdate(
+                        "create index vertexpkey_index on vertexproperty (pkey)");
             
             statement.executeUpdate(
             		"create table if not exists edgeproperty(" +
@@ -54,59 +70,56 @@ public class SqlGraph implements Graph {
 	            		"pkey varchar(255) not null," +
 	            		"value blob," +
 	            		"unique(eid,pkey))");
+            statement.executeUpdate(
+                        "create index edgepkey_index on edgeproperty (pkey)");
         	
         	// Create the shortest path procedure.
             statement.executeUpdate("DROP PROCEDURE IF EXISTS dijkstra");
         	statement.executeUpdate(
         			"CREATE PROCEDURE dijkstra( sourceid BIGINT UNSIGNED, targetid BIGINT UNSIGNED)\r\n" + 
         			"BEGIN\r\n" + 
-        			"    DECLARE vid BIGINT UNSIGNED;\r\n" + 
+        			"    DECLARE currid BIGINT UNSIGNED;\r\n" + 
         			"    DROP TEMPORARY TABLE IF EXISTS paths;\r\n" + 
         			"    CREATE TEMPORARY TABLE paths (\r\n" + 
-        			"        id BIGINT UNSIGNED NOT NULL PRIMARY KEY,\r\n" + 
+        			"        vid BIGINT UNSIGNED NOT NULL PRIMARY KEY,\r\n" + 
+        			"        calc TINYINT UNSIGNED NOT NULL,\r\n" + 
         			"        prev BIGINT UNSIGNED\r\n" + 
         			"    );\r\n" + 
         			"\r\n" + 
-        			"    INSERT INTO paths (id, prev) VALUES (sourceid, NULL);\r\n" + 
-        			"    SET vid = (sourceid);\r\n" + 
-        			"    WHILE vid IS NOT NULL DO\r\n" + 
+        			"    INSERT INTO paths (vid, calc, prev) VALUES (sourceid, 0, NULL);\r\n" + 
+        			"    SET currid = sourceid;\r\n" + 
+        			"    WHILE currid IS NOT NULL DO\r\n" + 
         			"    BEGIN\r\n" + 
-        			"        INSERT IGNORE INTO paths (id, prev)\r\n" + 
-        			"        SELECT (inid, outid)\r\n" + 
+        			"        INSERT IGNORE INTO paths (vid, calc, prev)\r\n" + 
+        			"        SELECT inid, 0, currid\r\n" + 
         			"        FROM edge\r\n" + 
-        			"        WHERE vid = edge.outid;\r\n" + 
+        			"        WHERE currid = outid;\r\n" + 
         			"\r\n" + 
-        			"        IF EXISTS (SELECT id FROM paths WHERE targetid = paths.id)\r\n" + 
+        			"        UPDATE paths SET calc = 1 WHERE currid = vid;\r\n" + 
+        			"\r\n" + 
+        			"        IF EXISTS (SELECT vid FROM paths WHERE targetid = vid LIMIT 1)\r\n" + 
         			"        THEN\r\n" + 
-        			"            SET vid = NULL;\r\n" + 
+        			"            SET currid = NULL;\r\n" + 
         			"        ELSE\r\n" + 
-        			"            SET vid = (\r\n" + 
-        			"                SELECT inid\r\n" + 
-        			"                FROM edge\r\n" + 
-        			"                WHERE vid = edge.outid\r\n" + 
-        			"            );\r\n" + 
+        			"            SET currid = (SELECT vid FROM paths WHERE calc = 0 LIMIT 1);\r\n" + 
         			"        END IF;\r\n" + 
         			"    END;\r\n" + 
         			"    END WHILE;\r\n" + 
         			"\r\n" + 
         			"    DROP TEMPORARY TABLE IF EXISTS result;\r\n" + 
         			"    CREATE TEMPORARY TABLE result (\r\n" + 
-        			"        id BIGINT UNSIGNED NOT NULL PRIMARY KEY\r\n" + 
+        			"        vid BIGINT UNSIGNED NOT NULL PRIMARY KEY\r\n" + 
         			"    );\r\n" + 
         			"\r\n" + 
-        			"    SET vid = (targetid);\r\n" + 
-        			"    WHILE vid IS NOT NULL DO\r\n" + 
+        			"    SET currid = targetid;\r\n" + 
+        			"    WHILE currid IS NOT NULL DO\r\n" + 
         			"    BEGIN\r\n" + 
-        			"        INSERT INTO result (id) VALUES (vid);\r\n" + 
-        			"\r\n" + 
-        			"        SET vid = (\r\n" + 
-        			"            SELECT prev\r\n" + 
-        			"            FROM paths\r\n" + 
-        			"            WHERE vid = paths.id);\r\n" + 
+        			"        INSERT INTO result (vid) VALUES (currid);\r\n" + 
+        			"        SET currid = (SELECT prev FROM paths WHERE currid = vid LIMIT 1);\r\n" + 
         			"    END;\r\n" + 
         			"    END WHILE;\r\n" + 
         			"\r\n" + 
-        			"    SELECT id FROM result;\r\n" + 
+        			"    SELECT vid FROM result;\r\n" + 
         			"END;");
         	statement.close();
         	

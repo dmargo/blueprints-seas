@@ -28,6 +28,24 @@ public class SqlGraph implements Graph {
             		"jdbc:mysql:" + this.addr + "&autoDeserialize=true");        
             Statement statement = this.connection.createStatement();
             
+            // First, some housekeeping.
+            statement.executeUpdate("DROP PROCEDURE IF EXISTS create_index_if_not_exists");
+        	statement.executeUpdate(
+        			"CREATE PROCEDURE create_index_if_exists( in VARCHAR(128), tn VARCHAR(128), cn VARCHAR(129))\r\n" + 
+        			"BEGIN\r\n" + 
+        			"    IF NOT EXISTS(\r\n" + 
+        			"        SELECT *\r\n" + 
+        			"        FROM information_schema.statistics\r\n" + 
+        			"        WHERE table_schema = database()\r\n" + 
+        			"        AND table_name = tn\r\n" + 
+        			"        AND index_name = in)\r\n" + 
+        			"    THEN\r\n" + 
+        			"        SET @s = CONCAT('CREATE INDEX ',in,' ON ',tn,' (',cn')');\r\n" + 
+        			"        PREPARE stmt FROM @s;\r\n" + 
+        			"        EXECUTE stmt;\r\n" + 
+        			"    END IF;\r\n" + 
+        			"END;");
+            
             // Create structure tables.
             statement.executeUpdate(
             		"create table if not exists vertex(" +
@@ -39,18 +57,12 @@ public class SqlGraph implements Graph {
 	            		"outid bigint unsigned not null references vertex(vid)," +
 	            		"inid bigint unsigned not null references vertex(vid)," +
 	            		"label varchar(255))");
-            statement.executeUpdate(
-                        "drop index outid_index on edge");
-            statement.executeUpdate(
-                        "drop index inid_index on edge");
-            statement.executeUpdate(
-                        "drop index label_index on edge");
-            statement.executeUpdate(
-                        "create index outid_index on edge (outid)");
-            statement.executeUpdate(
-                        "create index inid_index on edge (inid)");
-            statement.executeUpdate(
-                        "create index label_index on edge (label)");
+            this.connection.prepareCall(
+        			"call create_index_if_not_exists( 'outid_index', 'edge', 'outid')").executeUpdate();
+            this.connection.prepareCall(
+					"call create_index_if_not_exists( 'inid_index', 'edge', 'inid')").executeUpdate();
+            this.connection.prepareCall(
+					"call create_index_if_not_exists( 'label_index', 'edge', 'label')").executeUpdate();
 
             // Create property tables.
             statement.executeUpdate(
@@ -59,10 +71,8 @@ public class SqlGraph implements Graph {
 	            		"pkey varchar(255) not null," +
 	            		"value blob," +
 	            		"unique(vid,pkey))");
-            statement.executeUpdate(
-                        "drop index
-            statement.executeUpdate(
-                        "create index vertexpkey_index on vertexproperty (pkey)");
+            this.connection.prepareCall(
+					"call create_index_if_not_exists( 'vertexpkey_index', 'vertexproperty', 'pkey')").executeUpdate();
             
             statement.executeUpdate(
             		"create table if not exists edgeproperty(" +
@@ -70,8 +80,8 @@ public class SqlGraph implements Graph {
 	            		"pkey varchar(255) not null," +
 	            		"value blob," +
 	            		"unique(eid,pkey))");
-            statement.executeUpdate(
-                        "create index edgepkey_index on edgeproperty (pkey)");
+            this.connection.prepareCall(
+					"call create_index_if_not_exists( 'edgepkey_index', 'edgeproperty', 'pkey')").executeUpdate();
         	
         	// Create the shortest path procedure.
             statement.executeUpdate("DROP PROCEDURE IF EXISTS dijkstra");

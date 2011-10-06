@@ -31,16 +31,16 @@ public class SqlGraph implements Graph {
             // First, some housekeeping.
             statement.executeUpdate("DROP PROCEDURE IF EXISTS create_index_if_not_exists");
         	statement.executeUpdate(
-        			"CREATE PROCEDURE create_index_if_exists( in VARCHAR(128), tn VARCHAR(128), cn VARCHAR(129))\r\n" + 
+        			"CREATE PROCEDURE create_index_if_not_exists( theIndex VARCHAR(128), theTable VARCHAR(128), theColumn VARCHAR(129))\r\n" + 
         			"BEGIN\r\n" + 
-        			"    IF NOT EXISTS(\r\n" + 
+        			"    IF NOT EXISTS (\r\n" + 
         			"        SELECT *\r\n" + 
         			"        FROM information_schema.statistics\r\n" + 
         			"        WHERE table_schema = database()\r\n" + 
-        			"        AND table_name = tn\r\n" + 
-        			"        AND index_name = in)\r\n" + 
+        			"        AND table_name = theTable\r\n" + 
+        			"        AND index_name = theIndex)\r\n" + 
         			"    THEN\r\n" + 
-        			"        SET @s = CONCAT('CREATE INDEX ',in,' ON ',tn,' (',cn')');\r\n" + 
+        			"        SET @s = CONCAT('CREATE INDEX ',theIndex,' ON ',theTable,' (',theColumn,')');\r\n" + 
         			"        PREPARE stmt FROM @s;\r\n" + 
         			"        EXECUTE stmt;\r\n" + 
         			"    END IF;\r\n" + 

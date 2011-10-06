@@ -77,9 +77,12 @@ public class DupEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	    
 	    OperationStatus status;
 	    
+	    //XXX dmargo: This loop is obviously hackish to support the new Blueprints API.
+	    // The correct implementation should search for labels in order.
+	    this.graph.key.setPartial(0, 0, true);
 	    while (true) {
 		    try {
-	            status = this.cursor.getNextDup(this.id, this.data, null);   	 
+	            status = this.cursor.getNextDup(this.graph.key, this.data, null);   	 
 		    } catch (RuntimeException e) {
 	            throw e;
 	        } catch (Exception e) {
@@ -88,12 +91,15 @@ public class DupEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	               
 	        if (status == OperationStatus.SUCCESS) {
 		    	DupEdgeData edata = DupEdge.edgeDataBinding.entryToObject(data);
-		    	if (this.labels.contains(edata.label))
+		    	if (this.labels.contains(edata.label)) {
+		    		this.graph.key.setPartial(false);
 			    	if (this.getOut)
 			    		return new DupEdge(this.graph, RecordNumberBinding.entryToRecordNumber(this.id), edata.label, edata.id);
 			    	else
 			    		return new DupEdge(this.graph, edata.id, edata.label, RecordNumberBinding.entryToRecordNumber(this.id));
+		    	}
 	    	} else {
+	    		this.graph.key.setPartial(false);
 		        this.close();
 		        throw new NoSuchElementException();
 	    	}
@@ -108,9 +114,10 @@ public class DupEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 		
 	    OperationStatus status;
 	    
+	    this.graph.key.setPartial(0, 0, true);
 	    while (true) {
 		    try {
-	            status = this.cursor.getNextDup(this.id, this.data, null);   	 
+	            status = this.cursor.getNextDup(this.graph.key, this.data, null);   	 
 		    } catch (RuntimeException e) {
 	            throw e;
 	        } catch (Exception e) {
@@ -120,10 +127,12 @@ public class DupEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	        if (status == OperationStatus.SUCCESS) {
 	        	DupEdgeData edata = DupEdge.edgeDataBinding.entryToObject(this.data);
 	        	if (this.labels.contains(edata.label)) {
+	        		this.graph.key.setPartial(false);
 	        		this.useStored = true;
 	        		return true;
 	        	}
 	        } else {
+	        	this.graph.key.setPartial(false);
 		        this.close();
 		        return false;
 	        }

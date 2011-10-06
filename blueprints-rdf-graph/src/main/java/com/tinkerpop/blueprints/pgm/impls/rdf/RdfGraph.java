@@ -1,7 +1,7 @@
 package com.tinkerpop.blueprints.pgm.impls.rdf;
 
 import com.tinkerpop.blueprints.pgm.Edge;
-import com.tinkerpop.blueprints.pgm.Graph;
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.rdf.util.RdfEdgeSequence;
 import com.tinkerpop.blueprints.pgm.impls.rdf.util.RdfVertexSequence;
@@ -28,7 +28,7 @@ import java.util.*;
  *
  * @author Daniel Margo (http://www.eecs.harvard.edu/~dmargo)
  */
-public class RdfGraph implements Graph {
+public class RdfGraph implements TransactionalGraph {
 	
     public static final Map<String, RDFFormat> formats = new HashMap<String, RDFFormat>();
 
@@ -56,8 +56,9 @@ public class RdfGraph implements Graph {
 
     protected Sail rawGraph;
     protected SailConnection sailConnection;
-    //protected boolean inTransaction;
-    //private Mode mode = Mode.AUTOMATIC;
+    protected boolean inTransaction;
+    protected int txBuffer = 1;
+	protected int txCounter = 0;
     //private static final String LOG4J_PROPERTIES = "log4j.properties";
     
     public RdfGraph() {}
@@ -147,7 +148,7 @@ public class RdfGraph implements Graph {
     public void clear() {
         try {
             this.sailConnection.clear();
-            //this.autoStopTransaction(Conclusion.SUCCESS);
+            this.autoStopTransaction(Conclusion.SUCCESS);
         } catch (SailException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -155,7 +156,7 @@ public class RdfGraph implements Graph {
 
     public void shutdown() {
         try {
-        	//this.autoStopTransaction(Conclusion.FAILURE);
+        	this.autoStopTransaction(Conclusion.FAILURE);
         	this.sailConnection.close();
             this.rawGraph.shutDown();
         } catch (SailException e) {
@@ -190,7 +191,7 @@ public class RdfGraph implements Graph {
     public void addNamespace(final String prefix, final String namespace) {
         try {
             this.sailConnection.setNamespace(prefix, namespace);
-            //this.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            this.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (SailException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -242,20 +243,10 @@ public class RdfGraph implements Graph {
     public void removeNamespace(final String prefix) {
         try {
             this.sailConnection.removeNamespace(prefix);
-            //this.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            this.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (SailException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-    }
-
-    /**
-     * Given a URI, expand it to its full URI.
-     *
-     * @param uri the compressed URI (e.g. tg:knows)
-     * @return the expanded URI (e.g. http://tinkerpop.com#knows)
-     */
-    public String expandPrefix(final String uri) {
-        return RdfGraph.prefixToNamespace(uri, this.sailConnection);
     }
 
     /**
@@ -267,21 +258,15 @@ public class RdfGraph implements Graph {
     public String prefixNamespace(final String uri) {
         return RdfGraph.namespaceToPrefix(uri, this.sailConnection);
     }
-
-    protected static String prefixToNamespace(String uri, final SailConnection sailConnection) {
-        try {
-            if (uri.contains(SailTokens.NAMESPACE_SEPARATOR)) {
-                String namespace = sailConnection.getNamespace(
-            		uri.substring(0, uri.indexOf(SailTokens.NAMESPACE_SEPARATOR)));
-                
-                if (null != namespace)
-                    uri = namespace +
-                    	uri.substring(uri.indexOf(SailTokens.NAMESPACE_SEPARATOR) + 1);
-            }
-        } catch (SailException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-        return uri;
+    
+    /**
+     * Given a URI, expand it to its full URI.
+     *
+     * @param uri the compressed URI (e.g. tg:knows)
+     * @return the expanded URI (e.g. http://tinkerpop.com#knows)
+     */
+    public String expandPrefix(final String uri) {
+        return RdfGraph.prefixToNamespace(uri, this.sailConnection);
     }
 
     protected static String namespaceToPrefix(String uri, final SailConnection sailConnection) {
@@ -304,58 +289,77 @@ public class RdfGraph implements Graph {
         }
         return uri;
     }
-/*
+    
+    protected static String prefixToNamespace(String uri, final SailConnection sailConnection) {
+        try {
+            if (uri.contains(SailTokens.NAMESPACE_SEPARATOR)) {
+                String namespace = sailConnection.getNamespace(
+            		uri.substring(0, uri.indexOf(SailTokens.NAMESPACE_SEPARATOR)));
+                
+                if (null != namespace)
+                    uri = namespace +
+                    	uri.substring(uri.indexOf(SailTokens.NAMESPACE_SEPARATOR) + 1);
+            }
+        } catch (SailException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        return uri;
+    }
+
     public void startTransaction() {
-        if (Mode.AUTOMATIC == this.mode)
-            throw new RuntimeException(TransactionalGraph.TURN_OFF_MESSAGE);
         if (this.inTransaction)
             throw new RuntimeException(TransactionalGraph.NESTED_MESSAGE);
         this.inTransaction = true;
+        this.txCounter = 0;
     }
 
     public void stopTransaction(final Conclusion conclusion) {
-        if (Mode.AUTOMATIC == this.mode)
-            throw new RuntimeException(TransactionalGraph.TURN_OFF_MESSAGE);
-
         try {
-            this.inTransaction = false;
-            if (Conclusion.SUCCESS == conclusion) {
+            if (conclusion == Conclusion.SUCCESS) {
                 this.sailConnection.commit();
             } else {
                 this.sailConnection.rollback();
             }
+        	this.inTransaction = false;
+        	this.txCounter = 0;
         } catch (SailException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
 
-    protected void autoStopTransaction(Conclusion conclusion) {
-        if (this.mode == Mode.AUTOMATIC) {
+    protected void autoStopTransaction(final Conclusion conclusion) {
+        if (this.txBuffer > 0) {
             try {
-                this.inTransaction = false;
-                if (conclusion == Conclusion.SUCCESS)
-                    this.sailConnection.commit();
-                else
+                this.txCounter += 1;
+                if (conclusion == Conclusion.FAILURE) {
                     this.sailConnection.rollback();
+                    this.txCounter = 0;
+                    this.inTransaction = false;
+                } else if (this.txCounter % this.txBuffer == 0) {
+                    this.sailConnection.commit();
+                    this.txCounter = 0;
+                    this.inTransaction = false;
+                }
             } catch (SailException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }
     }
 
-    public Mode getTransactionMode() {
-        return this.mode;
-    }
-    
-    public void setTransactionMode(Mode mode) {
-        try {
-            this.sailConnection.commit();
-        } catch (SailException e) {
-        }
+    public void setMaxBufferSize(final int bufferSize) {
+        this.stopTransaction(Conclusion.SUCCESS);
         this.inTransaction = false;
-        this.mode = mode;
+        this.txBuffer = bufferSize;
     }
-*/
+
+    public int getMaxBufferSize() {
+        return this.txBuffer;
+    }
+
+    public int getCurrentBufferSize() {
+        return this.txCounter;
+    }
+
     /**
      * Evaluate a SPARQL query against the SailGraph (http://www.w3.org/TR/rdf-sparql-query/).
      * The result is a mapping between the ?-bindings and the bound URI, blank node, or literal

@@ -33,12 +33,15 @@ public class SqlEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
     }
     
     public SqlEdgeSequence(final SqlGraph graph, final long vid, final boolean getOut) {
+    	PreparedStatement statement;
+    	
         try {
-        	this.statement = graph.connection.createStatement();
         	if (getOut)
-        		this.rs = this.statement.executeQuery("select * from edge where outid=" + vid);
+        		statement = graph.connection.prepareStatement("select * from edge where outid=?");
         	else
-        		this.rs = this.statement.executeQuery("select * from edge where inid=" + vid);
+        		statement = graph.connection.prepareStatement("select * from edge where inid=?");
+        	statement.setLong(1, vid);
+        	this.rs = statement.executeQuery();
         	this.hasNext = this.rs.next();
         } catch (RuntimeException e) {
             throw e;
@@ -46,10 +49,12 @@ public class SqlEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
             throw new RuntimeException(e.getMessage(), e);
         }
         
+        this.statement = statement;
         this.graph = graph;
     }
     
     public SqlEdgeSequence(final SqlGraph graph, final long vid, final boolean getOut, final String[] labels) {
+    	PreparedStatement statement;
     	StringBuilder sb = new StringBuilder("'");
     	sb.append(labels[0]);
     	sb.append("'");
@@ -61,11 +66,12 @@ public class SqlEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
     	}	
 
         try {
-        	this.statement = graph.connection.createStatement();
         	if (getOut)
-        		this.rs = this.statement.executeQuery("select * from edge where outid=" + vid + " and label in (" + sb + ")");
+        		statement = graph.connection.prepareStatement("select * from edge where outid=? and label in (" + sb + ")");
         	else
-        		this.rs = this.statement.executeQuery("select * from edge where inid=" + vid + " and label in (" + sb + ")");
+        		statement = graph.connection.prepareStatement("select * from edge where inid=? and label in (" + sb + ")");
+        	statement.setLong(1, vid);
+        	this.rs = statement.executeQuery();
         	this.hasNext = this.rs.next();
         } catch (RuntimeException e) {
             throw e;
@@ -73,6 +79,7 @@ public class SqlEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
             throw new RuntimeException(e.getMessage(), e);
         }
         
+        this.statement = statement;
         this.graph = graph;
     }
 	

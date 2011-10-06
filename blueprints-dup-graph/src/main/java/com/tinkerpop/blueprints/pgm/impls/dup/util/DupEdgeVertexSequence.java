@@ -64,7 +64,9 @@ public class DupEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
 	    OperationStatus status;
 	    
 	    try {
-            status = this.cursor.getNextDup(this.id, this.data, null);   	 
+	    	this.graph.key.setPartial(0, 0, true);
+            status = this.cursor.getNextDup(this.id, this.data, null);
+            this.graph.key.setPartial(false);
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -92,7 +94,9 @@ public class DupEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
 	    OperationStatus status;
 	    
 	    try {
-            status = this.cursor.getNextDup(this.id, this.data, null);   	 
+	    	this.graph.key.setPartial(0, 0, true);
+            status = this.cursor.getNextDup(this.graph.key, this.data, null);
+            this.graph.key.setPartial(false);
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

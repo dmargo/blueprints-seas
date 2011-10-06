@@ -147,12 +147,14 @@ public class DupVertex extends DupElement implements Vertex {
 			cursor = this.graph.vertexPropertyDb.openCursor(null, null);
 			
 			status = cursor.getSearchKey(this.id, this.graph.data, null);
+			this.graph.key.setPartial(0, 0, true);
 			while (status == OperationStatus.SUCCESS) {
 				
 				result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
 				ret.add(result.pkey);
-				status = cursor.getNextDup(this.id, this.graph.data, null);
+				status = cursor.getNextDup(this.graph.key, this.graph.data, null);
 			}
+			this.graph.key.setPartial(false);
 			
 			cursor.close();
 		} catch (RuntimeException e) {

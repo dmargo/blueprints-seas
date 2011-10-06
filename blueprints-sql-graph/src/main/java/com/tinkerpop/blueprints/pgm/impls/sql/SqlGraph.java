@@ -28,10 +28,11 @@ public class SqlGraph implements Graph {
             		"jdbc:mysql:" + this.addr + "&autoDeserialize=true");        
             Statement statement = this.connection.createStatement();
             
-            // First, some housekeeping.
-            statement.executeUpdate("DROP PROCEDURE IF EXISTS create_index_if_not_exists");
+            // First, some MySQL housekeeping.
+            statement.executeUpdate(
+            		"DROP PROCEDURE IF EXISTS create_index_if_not_exists");
         	statement.executeUpdate(
-        			"CREATE PROCEDURE create_index_if_not_exists( theIndex VARCHAR(128), theTable VARCHAR(128), theColumn VARCHAR(129))\r\n" + 
+        			"CREATE PROCEDURE create_index_if_not_exists(theIndex VARCHAR(128), theTable VARCHAR(128), theColumn VARCHAR(129))\r\n" + 
         			"BEGIN\r\n" + 
         			"    IF NOT EXISTS (\r\n" + 
         			"        SELECT *\r\n" + 
@@ -58,11 +59,11 @@ public class SqlGraph implements Graph {
 	            		"inid bigint unsigned not null references vertex(vid)," +
 	            		"label varchar(255))");
             this.connection.prepareCall(
-        			"call create_index_if_not_exists( 'outid_index', 'edge', 'outid')").executeUpdate();
+        			"call create_index_if_not_exists('outid_index', 'edge', 'outid')").executeUpdate();
             this.connection.prepareCall(
-					"call create_index_if_not_exists( 'inid_index', 'edge', 'inid')").executeUpdate();
+					"call create_index_if_not_exists('inid_index', 'edge', 'inid')").executeUpdate();
             this.connection.prepareCall(
-					"call create_index_if_not_exists( 'label_index', 'edge', 'label')").executeUpdate();
+					"call create_index_if_not_exists('label_index', 'edge', 'label')").executeUpdate();
 
             // Create property tables.
             statement.executeUpdate(
@@ -70,23 +71,23 @@ public class SqlGraph implements Graph {
 	            		"vid bigint unsigned not null references vertex(vid)," +
 	            		"pkey varchar(255) not null," +
 	            		"value blob," +
-	            		"unique(vid,pkey))");
-            this.connection.prepareCall(
-					"call create_index_if_not_exists( 'vertexpkey_index', 'vertexproperty', 'pkey')").executeUpdate();
+	            		"primary key(vid,pkey))");
+            //this.connection.prepareCall(
+			//		"call create_index_if_not_exists('vertexpkey_index', 'vertexproperty', 'pkey')").executeUpdate();
             
             statement.executeUpdate(
             		"create table if not exists edgeproperty(" +
 	            		"eid bigint unsigned not null references edge(eid)," +
 	            		"pkey varchar(255) not null," +
 	            		"value blob," +
-	            		"unique(eid,pkey))");
-            this.connection.prepareCall(
-					"call create_index_if_not_exists( 'edgepkey_index', 'edgeproperty', 'pkey')").executeUpdate();
+	            		"primary key(eid,pkey))");
+            //this.connection.prepareCall(
+			//		"call create_index_if_not_exists('edgepkey_index', 'edgeproperty', 'pkey')").executeUpdate();
         	
         	// Create the shortest path procedure.
             statement.executeUpdate("DROP PROCEDURE IF EXISTS dijkstra");
         	statement.executeUpdate(
-        			"CREATE PROCEDURE dijkstra( sourceid BIGINT UNSIGNED, targetid BIGINT UNSIGNED)\r\n" + 
+        			"CREATE PROCEDURE dijkstra(sourceid BIGINT UNSIGNED, targetid BIGINT UNSIGNED)\r\n" + 
         			"BEGIN\r\n" + 
         			"    DECLARE currid BIGINT UNSIGNED;\r\n" + 
         			"    DROP TEMPORARY TABLE IF EXISTS paths;\r\n" + 

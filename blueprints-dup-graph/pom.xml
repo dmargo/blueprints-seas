@@ -8,7 +8,6 @@
         <version>1.1-SNAPSHOT</version>
     </parent>
     <artifactId>blueprints-dup-graph</artifactId>
-    <version>1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Blueprints-DupGraph</name>
     <description>Blueprints property graph implementation for the Berkeley database using duplicates</description>

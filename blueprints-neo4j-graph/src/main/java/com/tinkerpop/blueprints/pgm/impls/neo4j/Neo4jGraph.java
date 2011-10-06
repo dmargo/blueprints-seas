@@ -40,11 +40,11 @@ public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
     final private static Map<String, String> configuration = new HashMap<String, String>();
 
     static {
-        configuration.put("neostore.nodestore.db.mapped_memory", "52M");
-        configuration.put("neostore.relationshipstore.db.mapped_memory", "51M");
-        configuration.put("neostore.propertystore.db.mapped_memory", "51M");
-        configuration.put("neostore.propertystore.db.strings.mapped_memory", "51M");
-        configuration.put("neostore.propertystore.db.arrays.mapped_memory", "51M");
+        configuration.put("neostore.nodestore.db.mapped_memory", "39M");
+        configuration.put("neostore.relationshipstore.db.mapped_memory", "78M");
+        configuration.put("neostore.propertystore.db.mapped_memory", "140M");
+        configuration.put("neostore.propertystore.db.strings.mapped_memory", "0M");
+        configuration.put("neostore.propertystore.db.arrays.mapped_memory", "0M");
     }
 
     private GraphDatabaseService rawGraph;

@@ -253,12 +253,14 @@ public class DupEdge extends DupElement implements Edge {
 			cursor = this.graph.vertexPropertyDb.openCursor(null, null);
 			
 			status = cursor.getSearchKey(this.graph.key, this.graph.data, null);
+			this.graph.key.setPartial(0, 0, true);
 			while (status == OperationStatus.SUCCESS) {
 				
 				result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
 				ret.add(result.pkey);
 				status = cursor.getNextDup(this.graph.key, this.graph.data, null);
 			}
+			this.graph.key.setPartial(false);
 			
 			cursor.close();
 		} catch (RuntimeException e) {

@@ -2,6 +2,7 @@ package com.tinkerpop.blueprints.pgm.impls.rdf;
 
 
 import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 import com.tinkerpop.blueprints.pgm.impls.rdf.util.RdfEdgeSequence;
@@ -31,7 +32,7 @@ public class RdfVertex extends RdfElement implements Vertex {
     	this.rawVertex = new URIImpl(RdfGraph.RDFGRAPH_NS + UUID.randomUUID().toString());
     	
     	RdfHelper.addStatement(this.rawVertex, isURI, vertexURI, null, graph.sailConnection);
-    	//graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+    	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	
     	this.graph = graph;
     }
@@ -76,7 +77,7 @@ public class RdfVertex extends RdfElement implements Vertex {
     	RdfHelper.removeStatement(this.rawVertex, null, null, propertyContext, graph.sailConnection);
        	RdfHelper.removeStatement(this.rawVertex, isURI, vertexURI, null, graph.sailConnection);
     	
-    	//this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+    	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	
     	this.rawVertex = null;
     	this.graph = null;
@@ -147,7 +148,7 @@ public class RdfVertex extends RdfElement implements Vertex {
     	    	
     	Statement statement = new ContextStatementImpl(this.rawVertex, keyURI, valueLiteral, propertyContext);
     	RdfHelper.addStatement(statement, graph.sailConnection);
-    	//this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+    	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     }
     
     public Object removeProperty(final String key) {
@@ -156,7 +157,7 @@ public class RdfVertex extends RdfElement implements Vertex {
         	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key);
         	
     		RdfHelper.removeStatement(rawVertex, keyURI, null, propertyContext, graph.sailConnection);
-        	//this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	}
     	return result;
     }

@@ -1,20 +1,15 @@
 package com.tinkerpop.blueprints.pgm.impls.bdb.util;
 
 import com.sleepycat.db.DatabaseEntry;
+import com.tinkerpop.blueprints.pgm.impls.bdb.BdbGraph;
 
 import java.util.Comparator;
 
 public class BdbPrimaryKeyComparator implements Comparator<byte[]> {
 
-    BdbPrimaryKeyBinding binding;
-
-    public BdbPrimaryKeyComparator(BdbPrimaryKeyBinding binding) {
-        this.binding = binding;
-    }
-
     public int compare(byte[] o1, byte[] o2) {	
-    	BdbPrimaryKey key1 = binding.entryToObject(new DatabaseEntry(o1));
-        BdbPrimaryKey key2 = binding.entryToObject(new DatabaseEntry(o2));
+    	BdbPrimaryKey key1 = BdbGraph.primaryKeyBinding.entryToObject(new DatabaseEntry(o1));
+        BdbPrimaryKey key2 = BdbGraph.primaryKeyBinding.entryToObject(new DatabaseEntry(o2));
 
         // Sort first on id1.
         if (key1.id1 < key2.id1)

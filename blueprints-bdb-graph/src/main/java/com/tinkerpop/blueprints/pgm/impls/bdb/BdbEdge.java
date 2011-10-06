@@ -1,12 +1,13 @@
 package com.tinkerpop.blueprints.pgm.impls.bdb;
 
-import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 import com.tinkerpop.blueprints.pgm.impls.bdb.util.BdbEdgeKey;
+import com.tinkerpop.blueprints.pgm.impls.bdb.util.BdbEdgeKeyBinding;
+import com.tinkerpop.blueprints.pgm.impls.bdb.util.BdbEdgePropertyKeyCreator;
 import com.tinkerpop.blueprints.pgm.impls.bdb.util.BdbPrimaryKey;
 
 import java.util.HashSet;
@@ -16,6 +17,9 @@ import java.util.Set;
  * @author Daniel Margo (http://www.eecs.harvard.edu/~dmargo)
  */
 public class BdbEdge extends BdbElement implements Edge {
+	final public static BdbEdgeKeyBinding edgeKeyBinding = new BdbEdgeKeyBinding();
+	final public static BdbEdgePropertyKeyCreator edgePropertyKeyCreator = new BdbEdgePropertyKeyCreator();
+	
 	private BdbGraph graph;
 	protected long outId;
 	protected long inId;
@@ -26,14 +30,12 @@ public class BdbEdge extends BdbElement implements Edge {
     	BdbPrimaryKey primaryKey = new BdbPrimaryKey();
     	primaryKey.type = BdbPrimaryKey.VERTEX;
     	primaryKey.id1 = inVertex.id;
-    	
-    	DatabaseEntry key = new DatabaseEntry();
-    	graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+    	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, graph.key);
     	
         OperationStatus status;
 
         try {
-        	status = graph.graphDb.exists(null, key);
+        	status = graph.graphDb.exists(null, graph.key);
         } catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -44,10 +46,10 @@ public class BdbEdge extends BdbElement implements Edge {
 			throw new RuntimeException("BdbGraph: Vertex " + inVertex.id + " does not exist.");
 		
 		primaryKey.id1 = outVertex.id;
-		graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+		BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, graph.key);
 		
         try {
-        	status = graph.graphDb.exists(null, key);
+        	status = graph.graphDb.exists(null, graph.key);
         } catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -62,11 +64,11 @@ public class BdbEdge extends BdbElement implements Edge {
     	primaryKey.id2 = inVertex.id;
     	primaryKey.label = label;
     	
-    	graph.primaryKeyBinding.objectToEntry(primaryKey, key);
-    	DatabaseEntry data = new DatabaseEntry();
+    	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, graph.key);
+    	graph.data.setSize(0);
     	
 		try {
-			status = graph.graphDb.put(null, key, data);
+			status = graph.graphDb.put(null, graph.key, graph.data);
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -92,14 +94,12 @@ public class BdbEdge extends BdbElement implements Edge {
     	primaryKey.id1 = edgeKey.outId;
     	primaryKey.id2 = edgeKey.inId;
     	primaryKey.label = edgeKey.label;
-    	
-    	DatabaseEntry key = new DatabaseEntry();
-    	graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+    	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, graph.key);
         
         OperationStatus status;
         
         try {
-        	status = graph.graphDb.exists(null, key);
+        	status = graph.graphDb.exists(null, graph.key);
         } catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -116,10 +116,8 @@ public class BdbEdge extends BdbElement implements Edge {
         this.label = edgeKey.label;
     }
 
-    public BdbEdge(final BdbGraph graph, final DatabaseEntry pKey) {	
+    public BdbEdge(final BdbGraph graph, final BdbPrimaryKey primaryKey) {	
         this.graph = graph;
-        
-        BdbPrimaryKey primaryKey = graph.primaryKeyBinding.entryToObject(pKey);
         this.outId = primaryKey.id1;
         this.inId = primaryKey.id2;
         this.label = primaryKey.label;
@@ -131,12 +129,10 @@ public class BdbEdge extends BdbElement implements Edge {
     	edgeKey.outId = outId;
     	edgeKey.inId = inId;
     	edgeKey.label = label;
-    	
-    	DatabaseEntry key = new DatabaseEntry();
-    	graph.edgeKeyBinding.objectToEntry(edgeKey, key);
+    	BdbEdge.edgeKeyBinding.objectToEntry(edgeKey, this.graph.key);
 
         try {
-        	graph.edgePropertyDb.delete(null, key);
+        	graph.edgePropertyDb.delete(null, this.graph.key);
         } catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -149,10 +145,10 @@ public class BdbEdge extends BdbElement implements Edge {
         primaryKey.id1 = outId;
         primaryKey.id2 = inId;
         primaryKey.label = label;
-        graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+        BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
         
         try {
-        	graph.graphDb.delete(null, key);
+        	graph.graphDb.delete(null, this.graph.key);
         } catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -260,15 +256,12 @@ public class BdbEdge extends BdbElement implements Edge {
     	primaryKey.id2 = inId;
     	primaryKey.label = label;
     	primaryKey.propertyKey = propertyKey;
-    	
-    	DatabaseEntry key = new DatabaseEntry();
-    	graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+    	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
         
         OperationStatus status;
-    	DatabaseEntry data = new DatabaseEntry();
         
         try {
-        	status = graph.graphDb.get(null, key, data, null);
+        	status = graph.graphDb.get(null, this.graph.key, this.graph.data, null);
         } catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -278,35 +271,34 @@ public class BdbEdge extends BdbElement implements Edge {
 		if (status == OperationStatus.NOTFOUND)
 			return null;
 			
-    	return graph.serialBinding.entryToObject(data);
+    	return graph.serialBinding.entryToObject(this.graph.data);
     }
 
     public Set<String> getPropertyKeys() {
+		SecondaryCursor cursor = null;
+		OperationStatus status;
+		BdbPrimaryKey primaryKey;
+		Set<String> ret = new HashSet<String>();
+    	
     	BdbEdgeKey edgeKey = new BdbEdgeKey();
     	edgeKey.outId = outId;
     	edgeKey.inId = inId;
     	edgeKey.label = label;
-    	
-    	DatabaseEntry key = new DatabaseEntry();
-    	graph.edgeKeyBinding.objectToEntry(edgeKey, key);
-    	
-		SecondaryCursor cursor = null;
-		OperationStatus status;
-		DatabaseEntry pKey = new DatabaseEntry();
-		DatabaseEntry data = new DatabaseEntry();
-		
-		BdbPrimaryKey primaryKey;
-		Set<String> ret = new HashSet<String>();
+    	BdbEdge.edgeKeyBinding.objectToEntry(edgeKey, this.graph.key);
 		
 		try {
 			cursor = graph.edgePropertyDb.openSecondaryCursor(null, null);
 			
-			status = cursor.getSearchKey(key, pKey, data, null);
+			this.graph.data.setPartial(0, 0, true);
+			status = cursor.getSearchKey(this.graph.key, this.graph.pKey, this.graph.data, null);
+			this.graph.key.setPartial(0, 0, true);
 			while (status == OperationStatus.SUCCESS) {
-				primaryKey = graph.primaryKeyBinding.entryToObject(pKey);
+				primaryKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
 				ret.add(primaryKey.propertyKey);
-				status = cursor.getNextDup(key, pKey, data, null);
+				status = cursor.getNextDup(this.graph.key, this.graph.pKey, this.graph.data, null);
 			}
+			this.graph.key.setPartial(false);
+			this.graph.data.setPartial(false);
 			
 			cursor.close();
 		} catch (RuntimeException e) {
@@ -331,22 +323,19 @@ public class BdbEdge extends BdbElement implements Edge {
             primaryKey.id1 = outId;
             primaryKey.id2 = inId;
             primaryKey.label = label;
-
-            DatabaseEntry key = new DatabaseEntry();
-            graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+            BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
   		
-    		if (graph.graphDb.exists(null, key) == OperationStatus.NOTFOUND)
+    		if (graph.graphDb.exists(null, this.graph.key) == OperationStatus.NOTFOUND)
     			throw new RuntimeException("BdbGraph: Edge (" + primaryKey.id1 + ", " + primaryKey.id2 + ") does not exist.");
 
     		// Then, insert a new property record.
     		primaryKey.type = BdbPrimaryKey.EDGE_PROPERTY;
         	primaryKey.propertyKey = propertyKey;
-           	graph.primaryKeyBinding.objectToEntry(primaryKey, key);
+           	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
            	
-           	DatabaseEntry data = new DatabaseEntry();
-           	graph.serialBinding.objectToEntry(value, data);
+           	graph.serialBinding.objectToEntry(value, this.graph.data);
 
-           	OperationStatus status = graph.graphDb.put(null, key, data);
+           	OperationStatus status = graph.graphDb.put(null, this.graph.key, this.graph.data);
     		assert(status == OperationStatus.SUCCESS);
     		        	
         	//graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
@@ -369,16 +358,13 @@ public class BdbEdge extends BdbElement implements Edge {
         	primaryKey.id2 = inId;
         	primaryKey.label = label;
         	primaryKey.propertyKey = propertyKey;
-        	
-        	DatabaseEntry key = new DatabaseEntry();
-        	graph.primaryKeyBinding.objectToEntry(primaryKey, key);
-        	DatabaseEntry data = new DatabaseEntry();
+        	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
             
         	Object value = null;
         	
-        	if (graph.graphDb.get(null, key, data, null) == OperationStatus.SUCCESS) {
-        		graph.graphDb.delete(null, key);
-        		value = graph.serialBinding.entryToObject(data);
+        	if (graph.graphDb.get(null, this.graph.key, this.graph.data, null) == OperationStatus.SUCCESS) {
+        		graph.graphDb.delete(null, this.graph.key);
+        		value = graph.serialBinding.entryToObject(this.graph.data);
         	}    	
         	
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);

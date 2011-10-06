@@ -1,8 +1,8 @@
 package com.tinkerpop.blueprints.pgm.impls.neo4j;
 
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-
 import java.util.Map;
+
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
 /**
  * A Blueprints implementation of the graph database Neo4j (http://neo4j.org) with High Availability mode.

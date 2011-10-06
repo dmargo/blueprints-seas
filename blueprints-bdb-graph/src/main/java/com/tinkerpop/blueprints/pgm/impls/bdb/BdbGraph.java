@@ -4,6 +4,7 @@ import com.sleepycat.bind.serial.SerialBinding;
 import com.sleepycat.bind.serial.StoredClassCatalog;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
+import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseType;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.EnvironmentConfig;
@@ -21,21 +22,25 @@ import java.io.File;
  * @author Elaine Angelino (http://www.eecs.harvard.edu/~elaine/)
  */
 public class BdbGraph implements Graph {
+    final public static BdbPrimaryKeyBinding primaryKeyBinding = new BdbPrimaryKeyBinding();
+    final public static BdbPrimaryKeyComparator primaryKeyComparator = new BdbPrimaryKeyComparator();
+	
     private Environment dbEnv;
     
     private Database classDb;
     private StoredClassCatalog classCatalog;
     protected SerialBinding<Object> serialBinding;
-    
-    public BdbPrimaryKeyBinding primaryKeyBinding;
-    protected BdbEdgeKeyBinding edgeKeyBinding;
-    
+        
     protected Database graphDb;
     public SecondaryDatabase vertexDb;
     public SecondaryDatabase outDb;
     protected SecondaryDatabase inDb;
     protected SecondaryDatabase vertexPropertyDb;
     protected SecondaryDatabase edgePropertyDb;
+    
+    final public DatabaseEntry key = new DatabaseEntry();
+    final public DatabaseEntry pKey = new DatabaseEntry();
+    final public DatabaseEntry data = new DatabaseEntry();
     
     //protected Mode txnMode;
     //protected Transaction txn;
@@ -66,30 +71,29 @@ public class BdbGraph implements Graph {
             classCatalog = new StoredClassCatalog(classDb);
             serialBinding = new SerialBinding<Object>(classCatalog, Object.class);
             
-            primaryKeyBinding = new BdbPrimaryKeyBinding();
-            dbConfig.setBtreeComparator(new BdbPrimaryKeyComparator(primaryKeyBinding));
+            dbConfig.setBtreeComparator(BdbGraph.primaryKeyComparator);
             graphDb = dbEnv.openDatabase(null, "graph.db", null, dbConfig);
             
             SecondaryConfig secConfig = new SecondaryConfig();
             secConfig.setAllowCreate(true);
             secConfig.setAllowPopulate(true);
-            secConfig.setSortedDuplicates(true);
             secConfig.setType(DatabaseType.BTREE);
             
-            secConfig.setKeyCreator(new BdbVertexKeyCreator(primaryKeyBinding));
+            secConfig.setKeyCreator(BdbVertex.vertexKeyCreator);
             vertexDb = dbEnv.openSecondaryDatabase(null, "vertex.db", null, graphDb, secConfig);
 
-            secConfig.setKeyCreator(new BdbOutKeyCreator(primaryKeyBinding));
+            secConfig.setSortedDuplicates(true);
+            
+            secConfig.setKeyCreator(BdbVertex.outKeyCreator);
             outDb = dbEnv.openSecondaryDatabase(null, "out.db", null, graphDb, secConfig);
 
-            secConfig.setKeyCreator(new BdbInKeyCreator(primaryKeyBinding));
+            secConfig.setKeyCreator(BdbVertex.inKeyCreator);
             inDb = dbEnv.openSecondaryDatabase(null, "in.db", null, graphDb, secConfig);
 
-            secConfig.setKeyCreator(new BdbVertexPropertyKeyCreator(primaryKeyBinding));
+            secConfig.setKeyCreator(BdbVertex.vertexPropertyKeyCreator);
             vertexPropertyDb = dbEnv.openSecondaryDatabase(null, "vertexProperty.db", null, graphDb, secConfig);
 
-            edgeKeyBinding = new BdbEdgeKeyBinding();
-            secConfig.setKeyCreator(new BdbEdgePropertyKeyCreator(primaryKeyBinding, edgeKeyBinding));
+            secConfig.setKeyCreator(BdbEdge.edgePropertyKeyCreator);
             edgePropertyDb = dbEnv.openSecondaryDatabase(null, "edgeProperty", null, graphDb, secConfig);
             
             //txnMode = Mode.AUTOMATIC;

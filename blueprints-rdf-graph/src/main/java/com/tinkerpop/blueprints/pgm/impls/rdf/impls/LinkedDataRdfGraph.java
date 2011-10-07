@@ -17,4 +17,9 @@ public class LinkedDataRdfGraph extends RdfGraph {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
+    
+    public String toString() {
+        String type = this.rawGraph.getClass().getSimpleName().toLowerCase();
+        return "linkeddatardfgraph[" + type + "]";
+    }    
 }

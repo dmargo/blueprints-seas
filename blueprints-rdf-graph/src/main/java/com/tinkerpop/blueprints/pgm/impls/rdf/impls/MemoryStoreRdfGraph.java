@@ -17,6 +17,11 @@ public class MemoryStoreRdfGraph extends RdfGraph {
     public MemoryStoreRdfGraph(final String dataDirectory) {
         super(new MemoryStore(new File(dataDirectory)));
     }
+    
+    public String toString() {
+        String type = this.rawGraph.getClass().getSimpleName().toLowerCase();
+        return "memorystorerdfgraph[" + type + "]";
+    }    
 }
 
 

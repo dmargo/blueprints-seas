@@ -8,7 +8,6 @@ import com.tinkerpop.blueprints.pgm.impls.rdf.util.RdfVertexSequence;
 import com.tinkerpop.blueprints.pgm.impls.sail.SailTokens;
 
 import info.aduna.iteration.CloseableIteration;
-//import org.apache.log4j.PropertyConfigurator;
 import org.openrdf.model.*;
 import org.openrdf.query.Binding;
 import org.openrdf.query.BindingSet;
@@ -16,7 +15,6 @@ import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.impl.MapBindingSet;
 import org.openrdf.query.parser.ParsedQuery;
 import org.openrdf.query.parser.sparql.SPARQLParser;
-import org.openrdf.rio.*;
 import org.openrdf.sail.Sail;
 import org.openrdf.sail.SailConnection;
 import org.openrdf.sail.SailException;
@@ -30,6 +28,7 @@ import java.util.*;
  */
 public class RdfGraph implements TransactionalGraph {
 	
+	/*
     public static final Map<String, RDFFormat> formats = new HashMap<String, RDFFormat>();
 
     static {
@@ -50,13 +49,16 @@ public class RdfGraph implements TransactionalGraph {
         else
             return ret;
     }
+    */
     
 	public static final String RDFGRAPH_NS = "http://www.eecs.harvard.edu/~dmargo/01/rdfgraph-ns#";
 	public static final String RDFGRAPH_PREFIX = "graph";
 
     protected Sail rawGraph;
     protected SailConnection sailConnection;
-    protected boolean inTransaction;
+    protected ValueFactory valueFactory;
+    
+    protected boolean inTransaction = false;
     protected int txBuffer = 1;
 	protected int txCounter = 0;
     //private static final String LOG4J_PROPERTIES = "log4j.properties";
@@ -80,12 +82,15 @@ public class RdfGraph implements TransactionalGraph {
             this.rawGraph = sail;
             this.rawGraph.initialize();
             this.sailConnection = this.rawGraph.getConnection();
+            this.valueFactory = this.rawGraph.getValueFactory();
 
+            /*
             this.addNamespace(SailTokens.FOAF_PREFIX, SailTokens.FOAF_NS);
             this.addNamespace(SailTokens.OWL_PREFIX, SailTokens.OWL_NS);
             this.addNamespace(SailTokens.RDF_PREFIX, SailTokens.RDF_NS);
             this.addNamespace(SailTokens.RDFS_PREFIX, SailTokens.RDFS_NS);
             this.addNamespace(SailTokens.XSD_PREFIX, SailTokens.XSD_NS);
+            */
             this.addNamespace(RDFGRAPH_PREFIX, RDFGRAPH_NS);
         } catch (SailException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -259,16 +264,6 @@ public class RdfGraph implements TransactionalGraph {
         return RdfGraph.namespaceToPrefix(uri, this.sailConnection);
     }
     
-    /**
-     * Given a URI, expand it to its full URI.
-     *
-     * @param uri the compressed URI (e.g. tg:knows)
-     * @return the expanded URI (e.g. http://tinkerpop.com#knows)
-     */
-    public String expandPrefix(final String uri) {
-        return RdfGraph.prefixToNamespace(uri, this.sailConnection);
-    }
-
     protected static String namespaceToPrefix(String uri, final SailConnection sailConnection) {
         try {
             CloseableIteration<? extends Namespace, SailException> namespaces =
@@ -290,6 +285,16 @@ public class RdfGraph implements TransactionalGraph {
         return uri;
     }
     
+    /**
+     * Given a URI, expand it to its full URI.
+     *
+     * @param uri the compressed URI (e.g. tg:knows)
+     * @return the expanded URI (e.g. http://tinkerpop.com#knows)
+     */
+    public String expandPrefix(final String uri) {
+        return RdfGraph.prefixToNamespace(uri, this.sailConnection);
+    }
+ 
     protected static String prefixToNamespace(String uri, final SailConnection sailConnection) {
         try {
             if (uri.contains(SailTokens.NAMESPACE_SEPARATOR)) {

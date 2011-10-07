@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.pgm.impls.rdf.util.RdfEdgeSequence;
 
 import info.aduna.iteration.CloseableIteration;
 import org.openrdf.model.*;
+import org.openrdf.model.impl.BNodeImpl;
 import org.openrdf.model.impl.ContextStatementImpl;
 import org.openrdf.model.impl.URIImpl;
 import org.openrdf.sail.SailException;
@@ -22,16 +23,22 @@ import java.util.UUID;
  */
 public class RdfVertex extends RdfElement implements Vertex {
 
-	public static final URI isURI = new URIImpl(RdfGraph.RDFGRAPH_NS + "is");
-	public static final URI vertexURI = new URIImpl(RdfGraph.RDFGRAPH_NS + "vertex");
-	
+	public static final URI existsPred = new URIImpl(RdfGraph.RDFGRAPH_NS + "exists");
+	public static final Value blankObject = new BNodeImpl(null);
+	public static final Resource vertexContext = new URIImpl(RdfGraph.RDFGRAPH_NS + "vertex");
+			
     protected Resource rawVertex = null;
     protected RdfGraph graph = null;
     
     public RdfVertex(final RdfGraph graph) {
     	this.rawVertex = new URIImpl(RdfGraph.RDFGRAPH_NS + UUID.randomUUID().toString());
     	
-    	RdfHelper.addStatement(this.rawVertex, isURI, vertexURI, null, graph.sailConnection);
+    	RdfHelper.addStatement(
+			this.rawVertex,
+			null,
+			null,
+			RdfVertex.vertexContext,
+			graph.sailConnection);
     	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	
     	this.graph = graph;
@@ -46,7 +53,12 @@ public class RdfVertex extends RdfElement implements Vertex {
     	
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
-    			graph.sailConnection.getStatements(rawVertex, isURI, vertexURI, false);
+    			graph.sailConnection.getStatements(
+					rawVertex,
+					null,
+					null,
+					false,
+					RdfVertex.vertexContext);
     		
     		exists = iter.hasNext();
     		
@@ -74,8 +86,8 @@ public class RdfVertex extends RdfElement implements Vertex {
             ((RdfEdge) e).remove();
     	
     	// Next, remove properties and vertex.
-    	RdfHelper.removeStatement(this.rawVertex, null, null, propertyContext, graph.sailConnection);
-       	RdfHelper.removeStatement(this.rawVertex, isURI, vertexURI, null, graph.sailConnection);
+    	RdfHelper.removeStatement(this.rawVertex, null, null, RdfElement.propertyContext, graph.sailConnection);
+       	RdfHelper.removeStatement(this.rawVertex, null, null, RdfVertex.vertexContext, graph.sailConnection);
     	
     	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	

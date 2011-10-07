@@ -11,11 +11,12 @@ import java.io.File;
 public class NativeStoreRdfGraph extends RdfGraph {
 
     public NativeStoreRdfGraph(final String directory) {
-        super(new NativeStore(new File(directory)));
+    	super(new NativeStore(new File(directory), "cspo,cops"));
     }
 
     public NativeStoreRdfGraph(final String directory, final String tripleIndices) {
-        super(new NativeStore(new File(directory), tripleIndices));
+    	super(new NativeStore(new File(directory), tripleIndices));
+
     }
     
     public String toString() {

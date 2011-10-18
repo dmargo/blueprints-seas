@@ -56,7 +56,7 @@ public class RdfGraph implements TransactionalGraph {
 
     protected Sail rawGraph;
     protected SailConnection sailConnection;
-    protected ValueFactory valueFactory;
+    public ValueFactory valueFactory;
     
     protected boolean inTransaction = false;
     protected int txBuffer = 1;
@@ -141,7 +141,7 @@ public class RdfGraph implements TransactionalGraph {
     }
 
     public Iterable<Edge> getEdges() {
-        return new RdfEdgeSequence(this, null, null, true);
+        return new RdfEdgeSequence(this, null, true);
     }
     
     public void removeEdge(final Edge edge) {

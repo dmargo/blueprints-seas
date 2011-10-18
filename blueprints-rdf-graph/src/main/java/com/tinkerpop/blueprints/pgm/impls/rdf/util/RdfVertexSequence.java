@@ -21,7 +21,7 @@ public class RdfVertexSequence implements Iterable<Vertex>, Iterator<Vertex> {
     public RdfVertexSequence(final RdfGraph graph) {
     	try {
 			this.statements = graph.getSailConnection().getStatements(
-				null, RdfVertex.isURI, RdfVertex.vertexURI, false);
+				null, RdfVertex.vertexPred, RdfVertex.blankObj, false);
     	} catch (SailException e) {
     		throw new RuntimeException(e.getMessage(), e);
     	}

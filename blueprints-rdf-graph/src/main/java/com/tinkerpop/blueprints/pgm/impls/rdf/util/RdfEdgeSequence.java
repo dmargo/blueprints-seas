@@ -7,7 +7,7 @@ import info.aduna.iteration.CloseableIteration;
 
 import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
-import org.openrdf.model.URI;
+import org.openrdf.model.Value;
 import org.openrdf.sail.SailException;
 
 import java.util.Iterator;
@@ -23,16 +23,19 @@ public class RdfEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
     public RdfEdgeSequence(
 		final RdfGraph graph,
 		final Resource rawVertex,
-		final URI labelURI,
-		final boolean getOut)
-    {    	
+		final boolean getOut,
+		final String... labels)
+    {
+    	Resource outRes = getOut ? rawVertex : null;
+    	Value inVal = getOut ? null : rawVertex;
+    	
+    	Resource[] labelCtxts = new Resource[labels.length];
+    	for (int i = 0; i < labels.length; i++)
+    		labelCtxts[i] = graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, labels[i]);
+    	
     	try {
-    		if (getOut)
-    			this.statements = graph.getSailConnection().getStatements(
-					rawVertex, labelURI, null, false, RdfEdge.edgeContext);
-    		else
-    			this.statements = graph.getSailConnection().getStatements(
-					null, labelURI, rawVertex, false, RdfEdge.edgeContext);
+    		this.statements = graph.getSailConnection().getStatements(
+    				outRes, RdfEdge.edgePred, inVal, false, labelCtxts);
     	} catch (SailException e) {
     		throw new RuntimeException(e.getMessage(), e);
     	}

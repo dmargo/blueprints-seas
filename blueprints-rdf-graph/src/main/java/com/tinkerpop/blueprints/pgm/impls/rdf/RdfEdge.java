@@ -6,8 +6,10 @@ import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
 import org.openrdf.model.Literal;
+import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
+import org.openrdf.model.Value;
 import org.openrdf.model.impl.ContextStatementImpl;
 import org.openrdf.model.impl.URIImpl;
 import org.openrdf.sail.SailException;
@@ -22,8 +24,7 @@ import java.util.Set;
  */
 public class RdfEdge extends RdfElement implements Edge {
 	
-	public static final String defaultLabel = "RDFEDGE_DEFAULT_LABEL";
-	public static final URI edgeContext = new URIImpl(RdfGraph.RDFGRAPH_NS + "edge");
+	public static final URI edgePred = new URIImpl(RdfGraph.RDFGRAPH_NS + "edge");
 
     protected Statement rawEdge = null;
     protected URI edgeURI = null;
@@ -41,7 +42,7 @@ public class RdfEdge extends RdfElement implements Edge {
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
     			graph.sailConnection.getStatements(
-					outVertex.rawVertex, RdfVertex.isURI, RdfVertex.vertexURI, false);
+					outVertex.rawVertex, RdfVertex.vertexPred, RdfVertex.blankObj, false);
     		
     		exists = iter.hasNext();
     		
@@ -59,7 +60,7 @@ public class RdfEdge extends RdfElement implements Edge {
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
     			graph.sailConnection.getStatements(
-					inVertex.rawVertex, RdfVertex.isURI, RdfVertex.vertexURI, false);
+					inVertex.rawVertex, RdfVertex.vertexPred, RdfVertex.blankObj, false);
     		
     		exists = iter.hasNext();
     		
@@ -72,23 +73,20 @@ public class RdfEdge extends RdfElement implements Edge {
     		throw new RuntimeException(
 				"RdfEdge: inVertex " + inVertex.getId() + " does not exist.");
     	
-    	// Now, construct the edge and its URI.    	
-    	if (label == null)
-    		label = RdfEdge.defaultLabel;
-    	URI labelURI = new URIImpl(RdfGraph.RDFGRAPH_NS + label);
+    	// Now, construct the edge and its URI.
+    	Resource labelCtxt = label == null ? null : graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, label);
     	
     	RdfHelper.addStatement(
-			outVertex.rawVertex, labelURI, inVertex.rawVertex, edgeContext, graph.sailConnection);
+			outVertex.rawVertex, RdfEdge.edgePred, inVertex.rawVertex, labelCtxt, graph.sailConnection);
     	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	this.rawEdge = new ContextStatementImpl(
-			outVertex.rawVertex, labelURI, inVertex.rawVertex, edgeContext);
+			outVertex.rawVertex, RdfEdge.edgePred, inVertex.rawVertex, labelCtxt);
     	
     	String outString = outVertex.rawVertex.toString();
     	String inString = inVertex.rawVertex.toString();
-    	this.edgeURI = new URIImpl(
-			RdfGraph.RDFGRAPH_NS +
+    	this.edgeURI = graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS,
     		outString.substring(RdfGraph.RDFGRAPH_NS.length(), outString.length()) + ":" +
-    		label + ":" +
+    		(label == null ? "" : label + ":") +
     		inString.substring(RdfGraph.RDFGRAPH_NS.length(), inString.length()));
 
         this.graph = graph;
@@ -100,19 +98,19 @@ public class RdfEdge extends RdfElement implements Edge {
     	
     	String[] tokens = (
 			(String) id).substring(RdfGraph.RDFGRAPH_NS.length(), ((String) id).length()).split(":");
-       	if (tokens.length != 3)
+       	if (tokens.length != 2 && tokens.length != 3)
     		throw new RuntimeException("RdfEdge: " + id + " is not a valid Edge ID.");
     	
-    	URI outURI = new URIImpl(RdfGraph.RDFGRAPH_NS + tokens[0]);
-    	URI labelURI = new URIImpl(RdfGraph.RDFGRAPH_NS + tokens[1]);
-    	URI inURI = new URIImpl(RdfGraph.RDFGRAPH_NS + tokens[2]);
+    	Resource outRes = graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, tokens[0]);
+    	Value inVal = graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, tokens.length == 2 ? tokens[1] : tokens[2]);
+    	Resource labelCtxt = tokens.length == 2 ? null : graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, tokens[1]);
     	
     	// Confirm edge exists.
     	boolean exists = false;
     	
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
-    			graph.sailConnection.getStatements(outURI, labelURI, inURI, false, edgeContext);
+    			graph.sailConnection.getStatements(outRes, RdfEdge.edgePred, inVal, false, labelCtxt);
     		
     		exists = iter.hasNext();
     		
@@ -124,8 +122,8 @@ public class RdfEdge extends RdfElement implements Edge {
     	if (!exists)
     		throw new RuntimeException ("RdfEdge " + id + " does not exist.");
     
-    	this.rawEdge = new ContextStatementImpl(outURI, labelURI, inURI, edgeContext);
-    	this.edgeURI = new URIImpl((String) id);
+    	this.rawEdge = new ContextStatementImpl(outRes, RdfEdge.edgePred, inVal, labelCtxt);
+    	this.edgeURI = graph.valueFactory.createURI((String) id);
     	
     	this.graph = graph;
     }
@@ -134,20 +132,22 @@ public class RdfEdge extends RdfElement implements Edge {
     	this.rawEdge = rawEdge;
     	
     	String outString = rawEdge.getSubject().stringValue();
-    	String label = rawEdge.getPredicate().stringValue();
     	String inString = rawEdge.getObject().stringValue();
+    	Resource labelCtxt = rawEdge.getContext();
+    	String labelString = labelCtxt == null ? null : labelCtxt.stringValue();
+    	
     	this.edgeURI = new URIImpl(
 			RdfGraph.RDFGRAPH_NS +
     		outString.substring(RdfGraph.RDFGRAPH_NS.length(), outString.length()) + ":" +
-    		label.substring(RdfGraph.RDFGRAPH_NS.length(), label.length()) + ":" +
+			(labelString == null ? "" : labelString.substring(RdfGraph.RDFGRAPH_NS.length(), labelString.length()) + ":") +
     		inString.substring(RdfGraph.RDFGRAPH_NS.length(), inString.length()));
     	
     	this.graph = graph;
     }
     
     protected void remove() {
-    	RdfHelper.removeStatement(edgeURI, null, null, propertyContext, graph.sailConnection);
-    	RdfHelper.removeStatement(this.rawEdge, graph.sailConnection);
+    	RdfHelper.removeStatement(this.edgeURI, RdfElement.propertyPred, null, null, this.graph.sailConnection);
+    	RdfHelper.removeStatement(this.rawEdge, this.graph.sailConnection);
     	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	
     	this.rawEdge = null;
@@ -156,7 +156,7 @@ public class RdfEdge extends RdfElement implements Edge {
     }
     
     public Object getId() {
-    	return edgeURI != null ? edgeURI.stringValue() : null;
+    	return this.edgeURI != null ? this.edgeURI.stringValue() : null;
     }
     
     public Vertex getOutVertex() {
@@ -168,17 +168,22 @@ public class RdfEdge extends RdfElement implements Edge {
     }
 
     public String getLabel() {
-    	String label = this.rawEdge.getPredicate().stringValue();
-    	return label.substring(RdfGraph.RDFGRAPH_NS.length(), label.length());
+    	Resource labelCtxt = this.rawEdge.getContext();
+    	if (labelCtxt == null)
+    		return "";
+    	else {
+        	String label = labelCtxt.stringValue();
+        	return label.substring(RdfGraph.RDFGRAPH_NS.length(), label.length());
+    	}
     }
 
     public Object getProperty(final String key) {
-    	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key);   	
+    	Resource keyCtxt = this.graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, key);
     	
     	Literal result = null;
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
-    			graph.sailConnection.getStatements(this.edgeURI, keyURI, null, false, propertyContext);
+    			graph.sailConnection.getStatements(this.edgeURI, RdfElement.propertyPred, null, false, keyCtxt);
     		
     		if (iter.hasNext()) {
 	    		Statement statement = iter.next();
@@ -197,11 +202,11 @@ public class RdfEdge extends RdfElement implements Edge {
     	Set<String> result = new HashSet<String>();
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
-    			graph.sailConnection.getStatements(this.edgeURI, null, null, false, propertyContext);
+    			graph.sailConnection.getStatements(this.edgeURI, RdfElement.propertyPred, null, false);
     		
     		while (iter.hasNext()) {
-    			String fullKey = iter.next().getPredicate().stringValue();
-    			result.add(fullKey.substring(RdfGraph.RDFGRAPH_NS.length(), fullKey.length()));
+    			String keyString = iter.next().getContext().stringValue();
+    			result.add(keyString.substring(RdfGraph.RDFGRAPH_NS.length(), keyString.length()));
     		}
     		
     		iter.close();    		
@@ -218,10 +223,10 @@ public class RdfEdge extends RdfElement implements Edge {
     	
     	this.removeProperty(key);
     	
-    	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key); 	
+    	Resource keyCtxt = this.graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, key);	
     	Literal valueLiteral = RdfElement.castObject(value);
     	
-    	RdfHelper.addStatement(this.edgeURI, keyURI, valueLiteral, propertyContext, graph.sailConnection);
+    	RdfHelper.addStatement(this.edgeURI, RdfElement.propertyPred, valueLiteral, keyCtxt, graph.sailConnection);
     	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     }
 
@@ -229,9 +234,9 @@ public class RdfEdge extends RdfElement implements Edge {
     	Object result = this.getProperty(key);
     	
     	if (result != null) {
-        	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key);    	
+        	Resource keyCtxt = this.graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, key);  	
         	
-    		RdfHelper.removeStatement(this.edgeURI, keyURI, null, propertyContext, graph.sailConnection);
+    		RdfHelper.removeStatement(this.edgeURI, RdfElement.propertyPred, null, keyCtxt, graph.sailConnection);
         	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	}
     	

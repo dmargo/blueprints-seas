@@ -14,7 +14,7 @@ import org.openrdf.model.impl.URIImpl;
 
 public abstract class RdfElement implements Element {
 
-	public static final URI propertyContext = new URIImpl(RdfGraph.RDFGRAPH_NS + "property");
+	public static final URI propertyPred = new URIImpl(RdfGraph.RDFGRAPH_NS + "property");
 	
     protected static Map<String, String> classToDataType = new HashMap<String, String>();
     protected static Map<String, String> dataTypeToClass = new HashMap<String, String>();

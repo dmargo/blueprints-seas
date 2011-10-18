@@ -23,21 +23,20 @@ import java.util.UUID;
  */
 public class RdfVertex extends RdfElement implements Vertex {
 
-	public static final URI existsPred = new URIImpl(RdfGraph.RDFGRAPH_NS + "exists");
-	public static final Value blankObject = new BNodeImpl(null);
-	public static final Resource vertexContext = new URIImpl(RdfGraph.RDFGRAPH_NS + "vertex");
+	public static final URI vertexPred = new URIImpl(RdfGraph.RDFGRAPH_NS + "vertex");
+	public static final Value blankObj = new BNodeImpl("");
 			
     protected Resource rawVertex = null;
     protected RdfGraph graph = null;
     
     public RdfVertex(final RdfGraph graph) {
-    	this.rawVertex = new URIImpl(RdfGraph.RDFGRAPH_NS + UUID.randomUUID().toString());
+    	this.rawVertex = graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, UUID.randomUUID().toString());
     	
     	RdfHelper.addStatement(
 			this.rawVertex,
+			RdfVertex.vertexPred,
+			RdfVertex.blankObj,
 			null,
-			null,
-			RdfVertex.vertexContext,
 			graph.sailConnection);
     	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	
@@ -54,11 +53,10 @@ public class RdfVertex extends RdfElement implements Vertex {
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
     			graph.sailConnection.getStatements(
-					rawVertex,
-					null,
-					null,
-					false,
-					RdfVertex.vertexContext);
+					this.rawVertex,
+					RdfVertex.vertexPred,
+					RdfVertex.blankObj,
+					false);
     		
     		exists = iter.hasNext();
     		
@@ -86,8 +84,8 @@ public class RdfVertex extends RdfElement implements Vertex {
             ((RdfEdge) e).remove();
     	
     	// Next, remove properties and vertex.
-    	RdfHelper.removeStatement(this.rawVertex, null, null, RdfElement.propertyContext, graph.sailConnection);
-       	RdfHelper.removeStatement(this.rawVertex, null, null, RdfVertex.vertexContext, graph.sailConnection);
+    	RdfHelper.removeStatement(this.rawVertex, RdfElement.propertyPred, null, null, graph.sailConnection);
+       	RdfHelper.removeStatement(this.rawVertex, RdfVertex.vertexPred, RdfVertex.blankObj, null, graph.sailConnection);
     	
     	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	
@@ -100,22 +98,20 @@ public class RdfVertex extends RdfElement implements Vertex {
     }
 
     public Iterable<Edge> getOutEdges(final String... labels) {
-    	URI labelURI = labels.length != 0 ? new URIImpl(RdfGraph.RDFGRAPH_NS + labels[0]) : null;
-    	return new RdfEdgeSequence(this.graph, this.rawVertex, labelURI, true);
+    	return new RdfEdgeSequence(this.graph, this.rawVertex, true, labels);
     }
 
     public Iterable<Edge> getInEdges(final String... labels) {
-    	URI labelURI = labels.length != 0 ? new URIImpl(RdfGraph.RDFGRAPH_NS + labels[0]) : null;
-    	return new RdfEdgeSequence(this.graph, this.rawVertex, labelURI, false);
+    	return new RdfEdgeSequence(this.graph, this.rawVertex, false, labels);
     }
     
     public Object getProperty(final String key) {
-    	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key);   	
+    	Resource keyCtxt = this.graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, key);
     	
     	Literal result = null;
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
-    			graph.sailConnection.getStatements(this.rawVertex, keyURI, null, false, propertyContext);
+    			graph.sailConnection.getStatements(this.rawVertex, RdfElement.propertyPred, null, false, keyCtxt);
     		
     		if (iter.hasNext()) {
 	    		Statement statement = iter.next();
@@ -134,11 +130,11 @@ public class RdfVertex extends RdfElement implements Vertex {
     	Set<String> result = new HashSet<String>();
     	try {
     		CloseableIteration<? extends Statement,SailException> iter =
-    			graph.sailConnection.getStatements(this.rawVertex, null, null, false, propertyContext);
+    			graph.sailConnection.getStatements(this.rawVertex, RdfElement.propertyPred, null, false);
     		
     		while (iter.hasNext()) {
-    			String fullKey = iter.next().getPredicate().stringValue();
-    			result.add(fullKey.substring(RdfGraph.RDFGRAPH_NS.length(), fullKey.length()));
+    			String keyString = iter.next().getContext().stringValue();
+    			result.add(keyString.substring(RdfGraph.RDFGRAPH_NS.length(), keyString.length()));
     		}
     		
     		iter.close();    		
@@ -155,10 +151,10 @@ public class RdfVertex extends RdfElement implements Vertex {
     	
     	this.removeProperty(key);
     	
-    	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key);
-    	Literal valueLiteral = castObject(value);
+    	Resource keyCtxt = this.graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, key);	
+    	Literal valueLiteral = RdfElement.castObject(value);
     	    	
-    	Statement statement = new ContextStatementImpl(this.rawVertex, keyURI, valueLiteral, propertyContext);
+    	Statement statement = new ContextStatementImpl(this.rawVertex, RdfElement.propertyPred, valueLiteral, keyCtxt);
     	RdfHelper.addStatement(statement, graph.sailConnection);
     	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     }
@@ -166,9 +162,9 @@ public class RdfVertex extends RdfElement implements Vertex {
     public Object removeProperty(final String key) {
     	Object result = this.getProperty(key);
     	if (result != null) {
-        	URI keyURI = new URIImpl(RdfGraph.RDFGRAPH_NS + key);
+        	Resource keyCtxt = this.graph.valueFactory.createURI(RdfGraph.RDFGRAPH_NS, key);
         	
-    		RdfHelper.removeStatement(rawVertex, keyURI, null, propertyContext, graph.sailConnection);
+    		RdfHelper.removeStatement(rawVertex, RdfElement.propertyPred, null, keyCtxt, graph.sailConnection);
         	this.graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     	}
     	return result;

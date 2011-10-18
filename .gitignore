@@ -5,4 +5,8 @@ target/
 *.iws
 *.DS_Store
 *.ipr
-
+.project
+.settings/
+*/.classpath
+*/.project
+*/.settings/

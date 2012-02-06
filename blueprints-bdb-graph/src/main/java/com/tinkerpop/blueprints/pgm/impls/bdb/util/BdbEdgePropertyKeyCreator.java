@@ -18,10 +18,7 @@ public class BdbEdgePropertyKeyCreator implements SecondaryKeyCreator {
         if (primaryKey.type != BdbPrimaryKey.EDGE_PROPERTY)
             return false;
 
-        BdbEdgeKey secondaryKey = new BdbEdgeKey();
-        secondaryKey.outId = primaryKey.id1;
-        secondaryKey.inId = primaryKey.id2;
-        secondaryKey.label = primaryKey.label;
+        BdbEdgeKey secondaryKey = new BdbEdgeKey(primaryKey.id1, primaryKey.id2, primaryKey.label);
         BdbEdge.edgeKeyBinding.objectToEntry(secondaryKey, resultEntry);
         return true;
     }

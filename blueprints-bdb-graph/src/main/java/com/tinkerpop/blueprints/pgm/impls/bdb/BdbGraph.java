@@ -41,9 +41,6 @@ public class BdbGraph implements Graph {
     final public DatabaseEntry key = new DatabaseEntry();
     final public DatabaseEntry pKey = new DatabaseEntry();
     final public DatabaseEntry data = new DatabaseEntry();
-    
-    //protected Mode txnMode;
-    //protected Transaction txn;
 
     /**
      * Creates a new instance of a BdbGraph at directory.
@@ -96,9 +93,6 @@ public class BdbGraph implements Graph {
             secConfig.setKeyCreator(BdbEdge.edgePropertyKeyCreator);
             edgePropertyDb = dbEnv.openSecondaryDatabase(null, "edgeProperty", null, graphDb, secConfig);
             
-            //txnMode = Mode.AUTOMATIC;
-            //txn = null;
-
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -124,6 +118,9 @@ public class BdbGraph implements Graph {
     }
 
     public Vertex getVertex(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("BdbGraph.getVertex(id) cannot be null.");
+    	
     	try {
     		return new BdbVertex(this, id);
     	} catch (Exception e) {
@@ -138,6 +135,7 @@ public class BdbGraph implements Graph {
     public void removeVertex(final Vertex vertex) {
         if (vertex == null || vertex.getId() == null)
             return;
+        
         try {
             //autoStartTransaction();
             ((BdbVertex) vertex).remove();
@@ -167,6 +165,9 @@ public class BdbGraph implements Graph {
     }
 
     public Edge getEdge(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("BdbGraph.getEdge(id) cannot be null.");
+    	
     	try {
     		return new BdbEdge(this, id);
     	} catch(Exception e) {

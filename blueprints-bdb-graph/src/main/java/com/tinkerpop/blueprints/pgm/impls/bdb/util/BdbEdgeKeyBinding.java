@@ -13,10 +13,7 @@ public class BdbEdgeKeyBinding extends TupleBinding<BdbEdgeKey> {
     }
 
     public BdbEdgeKey entryToObject(TupleInput ti) {
-        BdbEdgeKey object = new BdbEdgeKey();
-        object.outId = ti.readLong();
-        object.inId = ti.readLong();
-        object.label = ti.readString();
+        BdbEdgeKey object = new BdbEdgeKey(ti.readLong(), ti.readLong(), ti.readString());
         return object;
     }
 } 

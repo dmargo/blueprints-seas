@@ -22,25 +22,25 @@ public class BdbEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
     private boolean useStoredKey = false;
     
     public BdbEdgeVertexSequence(final BdbGraph graph, final SecondaryDatabase secondaryDb, final long id) {
-    	this.graph = graph;
-    	
     	OperationStatus status;
-    	LongBinding.longToEntry(id, this.graph.key);
+    	LongBinding.longToEntry(id, graph.key);
     	
     	try {
             this.cursor = secondaryDb.openSecondaryCursor(null, null);
-            status = this.cursor.getSearchKey(this.graph.key, this.graph.pKey, this.graph.data, null);
+            status = this.cursor.getSearchKey(graph.key, graph.pKey, graph.data, null);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
         
+    	this.graph = graph;
+    	
         if (status == OperationStatus.SUCCESS) {
         	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
         	this.useStoredKey = true;
         } else 
-        	close();
+        	this.close();
     } 
 	
 	public Edge next() {    
@@ -66,7 +66,7 @@ public class BdbEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
         if (status == OperationStatus.SUCCESS)
         	return new BdbEdge(graph, BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey));
         else {
-            close();
+            this.close();
             throw new NoSuchElementException();
         }
 	}
@@ -94,7 +94,7 @@ public class BdbEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
         	this.useStoredKey = true;
         	return true;
         } else {
-            close();
+            this.close();
             return false;
         }
 	}

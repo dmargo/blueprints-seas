@@ -9,10 +9,12 @@ public class BdbPrimaryKeyBinding extends TupleBinding<BdbPrimaryKey> {
     public void objectToEntry(BdbPrimaryKey object, TupleOutput to) {
         to.writeByte(object.type);
         to.writeLong(object.id1);
+        
         if (object.type == BdbPrimaryKey.EDGE || object.type == BdbPrimaryKey.EDGE_PROPERTY) {
             to.writeLong(object.id2);
             to.writeString(object.label);
         }
+        
         if (object.type == BdbPrimaryKey.VERTEX_PROPERTY || object.type == BdbPrimaryKey.EDGE_PROPERTY)
             to.writeString(object.propertyKey);
     }
@@ -22,12 +24,19 @@ public class BdbPrimaryKeyBinding extends TupleBinding<BdbPrimaryKey> {
 
         object.type = ti.readByte();
         object.id1 = ti.readLong();
+        
         if (object.type == BdbPrimaryKey.EDGE || object.type == BdbPrimaryKey.EDGE_PROPERTY) {
             object.id2 = ti.readLong();
             object.label = ti.readString();
+        } else {
+        	object.id2 = 0;
+        	object.label = null;
         }
+        
         if (object.type == BdbPrimaryKey.VERTEX_PROPERTY || object.type == BdbPrimaryKey.EDGE_PROPERTY)
             object.propertyKey = ti.readString();
+        else
+        	object.propertyKey = null;
 
         return object;
     }

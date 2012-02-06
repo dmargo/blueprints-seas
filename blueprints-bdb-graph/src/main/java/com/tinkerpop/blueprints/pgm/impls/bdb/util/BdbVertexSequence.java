@@ -21,18 +21,18 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
     private boolean useStoredId = false;
     
     public BdbVertexSequence(final BdbGraph graph) {
-        this.graph = graph;
-        
         OperationStatus status;
     	
         try {
             this.cursor = graph.vertexDb.openCursor(null, null);
-            status = this.cursor.getFirst(this.graph.key, this.graph.data, null);
+            status = this.cursor.getFirst(graph.key, graph.data, null);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+        
+        this.graph = graph;
         
         if (status == OperationStatus.SUCCESS) {
         	this.storedId = LongBinding.entryToLong(this.graph.key);
@@ -62,7 +62,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
         if (status == OperationStatus.SUCCESS)
         	return new BdbVertex(this.graph, LongBinding.entryToLong(this.graph.key));
         else {
-            close();
+            this.close();
             throw new NoSuchElementException();
         }
 	}
@@ -88,7 +88,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
         	this.useStoredId = true;
         	return true;
         } else {
-            close();
+            this.close();
             return false;
         }
 	}

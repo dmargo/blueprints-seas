@@ -2,6 +2,7 @@ package com.tinkerpop.blueprints.pgm.impls.bdb;
 
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.db.Cursor;
+import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
 import com.tinkerpop.blueprints.pgm.Edge;
@@ -30,78 +31,48 @@ public class BdbVertex extends BdbElement implements Vertex {
     private BdbGraph graph;
     protected long id;
 
-    protected BdbVertex(final BdbGraph graph) {    	
-		Cursor cursor = null;
-		OperationStatus status;
-		
+    protected BdbVertex(final BdbGraph graph) throws DatabaseException {    		
 		// Get the last ID# in the graph.
-		try {
-	        cursor = graph.graphDb.openCursor(null, null);
-	        status = cursor.getLast(graph.key, graph.data, null);
-	        cursor.close();
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+		Cursor cursor = graph.graphDb.openCursor(null, null);
+        OperationStatus status = cursor.getLast(graph.key, graph.data, null);
+        cursor.close();
 		
-		BdbPrimaryKey primaryKey;
+        BdbPrimaryKey primaryKey;
+        if (status == OperationStatus.NOTFOUND) {
+        	primaryKey = new BdbPrimaryKey();
+        	this.id = 0;
+        } else {
+        	primaryKey = BdbGraph.primaryKeyBinding.entryToObject(graph.key);
+        	this.id = primaryKey.id1 + 1;
+        	if (this.id <= 0)
+    			throw new RuntimeException("BdbVertex() is out of ID#s.");
+        }
+        
+        primaryKey.type = BdbPrimaryKey.VERTEX;
+        primaryKey.id1 = this.id;
+        primaryKey.id2 = 0;
+        primaryKey.label = null;
+        primaryKey.propertyKey = null;
 		
-		if (status == OperationStatus.NOTFOUND) {
-			primaryKey = new BdbPrimaryKey();
-			this.id = 0;
-		} else {
-			primaryKey = BdbGraph.primaryKeyBinding.entryToObject(graph.key);
-			this.id = primaryKey.id1 + 1;
-			if (this.id <= 0)
-				throw new RuntimeException("BdbGraph: Database is out of ID#s.");
-		}
-		
-		// Insert a new vertex record.
-		primaryKey.type = BdbPrimaryKey.VERTEX;
-		primaryKey.id1 = this.id;
-		primaryKey.id2 = 0;
-		primaryKey.propertyKey = null;
-
 		BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, graph.key);
 		graph.data.setSize(0);
 		
-		try {
-			status = graph.graphDb.put(null, graph.key, graph.data);
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
-		
-		assert(status == OperationStatus.SUCCESS);
+		// Insert a new vertex record.
+		if (graph.graphDb.put(null, graph.key, graph.data) != OperationStatus.SUCCESS)
+			throw new RuntimeException("BdbVertex failed to put into database.");
 		
 		this.graph = graph;
+		this.id = primaryKey.id1;
     }
 
-    protected BdbVertex(final BdbGraph graph, final Object id) {
-    	if(id.getClass() != Long.class)
-    		throw new RuntimeException("BdbGraph: " + id + " is not a valid Vertex ID.");
+    protected BdbVertex(final BdbGraph graph, final Object id) throws DatabaseException {
+    	if(!(id instanceof Long))
+    		throw new IllegalArgumentException("BdbVertex(id) " + id + " is not an instanceof Long.");
     	
-    	// Look for a valid vertex record.
-        BdbPrimaryKey primaryKey = new BdbPrimaryKey();
-        primaryKey.type = BdbPrimaryKey.VERTEX;
-        primaryKey.id1 = ((Long) id).longValue();
+        BdbPrimaryKey primaryKey = new BdbPrimaryKey(((Long) id).longValue());
         BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, graph.key);
-        
-        OperationStatus status;
-        
-        try {
-        	status = graph.graphDb.exists(null, graph.key);
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
-		
-		// If NOTFOUND, then id is invalid.
-		if (status == OperationStatus.NOTFOUND)
-			throw new RuntimeException("BdbGraph: Vertex " + primaryKey.id1 + " does not exist.");
+		if (graph.graphDb.exists(null, graph.key) == OperationStatus.NOTFOUND)
+			throw new RuntimeException("BdbVertex(id) " + primaryKey.id1 + " does not exist.");
 
         this.graph = graph;
         this.id = primaryKey.id1;
@@ -112,7 +83,7 @@ public class BdbVertex extends BdbElement implements Vertex {
         this.id = id;
     }  
 
-    protected void remove() {
+    protected void remove() throws DatabaseException {
     	// Remove linked edge records.
         for (Edge e : this.getInEdges())
         	((BdbEdge) e).remove();
@@ -120,59 +91,41 @@ public class BdbVertex extends BdbElement implements Vertex {
             ((BdbEdge) e).remove();
 
     	// Remove properties.
-        LongBinding.longToEntry(id, this.graph.key);
-        
-        try {
-        	graph.vertexPropertyDb.delete(null, this.graph.key);
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+        LongBinding.longToEntry(this.id, this.graph.key);
+    	graph.vertexPropertyDb.delete(null, this.graph.key);
 		
 		// Remove vertex record.
-        BdbPrimaryKey primaryKey = new BdbPrimaryKey();
-        primaryKey.type = BdbPrimaryKey.VERTEX;
-        primaryKey.id1 = id;
+        BdbPrimaryKey primaryKey = new BdbPrimaryKey(this.id);
         BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
         
-        try {
-        	graph.graphDb.delete(null, this.graph.key);
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+        graph.graphDb.delete(null, this.graph.key);
 
         this.id = -1;
         this.graph = null;
     }
     
     public Object getId() {
-    	if (id == -1)
+    	if (this.id == -1)
     		return null;
-    	return new Long(id);
+    	return new Long(this.id);
     }
 
     public Iterable<Edge> getOutEdges(final String... labels) {
     	if (labels.length == 0)
-    		return new BdbEdgeVertexSequence(graph, graph.outDb, this.id);
+    		return new BdbEdgeVertexSequence(this.graph, this.graph.outDb, this.id);
     	else
-    		return new BdbEdgeVertexLabelSequence(graph, graph.outDb, this.id, labels);
+    		return new BdbEdgeVertexLabelSequence(this.graph, this.graph.outDb, this.id, labels);
     }
 
     public Iterable<Edge> getInEdges(final String... labels) {
     	if (labels.length == 0)
-    		return new BdbEdgeVertexSequence(graph, graph.inDb, this.id);
+    		return new BdbEdgeVertexSequence(this.graph, this.graph.inDb, this.id);
     	else
-    		return new BdbEdgeVertexLabelSequence(graph, graph.inDb, this.id, labels);    
+    		return new BdbEdgeVertexLabelSequence(this.graph, this.graph.inDb, this.id, labels);    
     }
 
     public Object getProperty(final String propertyKey) {
-    	BdbPrimaryKey primaryKey = new BdbPrimaryKey();
-    	primaryKey.type = BdbPrimaryKey.VERTEX_PROPERTY;
-    	primaryKey.id1 = id;
-    	primaryKey.propertyKey = propertyKey;
+    	BdbPrimaryKey primaryKey = new BdbPrimaryKey(this.id, propertyKey);
     	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
         
         OperationStatus status;
@@ -199,7 +152,6 @@ public class BdbVertex extends BdbElement implements Vertex {
 		
     	LongBinding.longToEntry(id, this.graph.key);
     	
-		
 		try {
 			cursor = graph.vertexPropertyDb.openSecondaryCursor(null, null);
 			
@@ -226,19 +178,17 @@ public class BdbVertex extends BdbElement implements Vertex {
     
     public void setProperty(final String propertyKey, final Object value) {
     	if (propertyKey == null || propertyKey.equals("id"))
-    		throw new RuntimeException("BdbGraph: Invalid propertyKey.");
+    		throw new IllegalArgumentException("BdbVertex.setProperty(propertyKey) is invalid.");
+    	
+        BdbPrimaryKey primaryKey = new BdbPrimaryKey(this.id);
+        BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
     	
         try {
             //graph.autoStartTransaction();
 
         	// First, verify vertex existence.
-            BdbPrimaryKey primaryKey = new BdbPrimaryKey();
-            primaryKey.type = BdbPrimaryKey.VERTEX;
-            primaryKey.id1 = id;
-            BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
-  		
-    		if (graph.graphDb.exists(null, this.graph.key) == OperationStatus.NOTFOUND)
-    			throw new RuntimeException("BdbGraph: Vertex " + primaryKey.id1 + " does not exist.");
+    		if (this.graph.graphDb.exists(null, this.graph.key) == OperationStatus.NOTFOUND)
+    			throw new RuntimeException("BdbVertex.setProperty vertex " + primaryKey.id1 + " does not exist.");
 
     		// Then, insert a new property record.
     		primaryKey.type = BdbPrimaryKey.VERTEX_PROPERTY;
@@ -247,8 +197,8 @@ public class BdbVertex extends BdbElement implements Vertex {
            	
            	graph.serialBinding.objectToEntry(value, this.graph.data);
 
-           	OperationStatus status = graph.graphDb.put(null, this.graph.key, this.graph.data);
-    		assert(status == OperationStatus.SUCCESS);
+    		if (graph.graphDb.put(null, this.graph.key, this.graph.data) != OperationStatus.SUCCESS)
+    			throw new RuntimeException("BdbVertex.setProperty failed to put into database.");
     		        	
         	//graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
@@ -261,25 +211,20 @@ public class BdbVertex extends BdbElement implements Vertex {
     }
 
     public Object removeProperty(final String propertyKey) {
+    	BdbPrimaryKey primaryKey = new BdbPrimaryKey(this.id, propertyKey);
+    	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
+        
+    	Object value = null;
+    	
         try {
             //graph.autoStartTransaction();
 
-        	BdbPrimaryKey primaryKey = new BdbPrimaryKey();
-        	primaryKey.type = BdbPrimaryKey.VERTEX_PROPERTY;
-        	primaryKey.id1 = id;
-        	primaryKey.propertyKey = propertyKey;
-        	BdbGraph.primaryKeyBinding.objectToEntry(primaryKey, this.graph.key);
-            
-        	Object value = null;
-        	
         	if (graph.graphDb.get(null, this.graph.key, this.graph.data, null) == OperationStatus.SUCCESS) {
         		graph.graphDb.delete(null, this.graph.key);
         		value = graph.serialBinding.entryToObject(this.graph.data);
         	}
         	
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-    		
-            return value;
+            //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS); 		
         } catch (RuntimeException e) {
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
@@ -287,6 +232,8 @@ public class BdbVertex extends BdbElement implements Vertex {
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
+        
+        return value;
     }
     
     public boolean equals(Object obj) {

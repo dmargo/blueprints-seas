@@ -25,19 +25,19 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
     private Set<String> labels;
    
     public BdbEdgeVertexLabelSequence(final BdbGraph graph, final SecondaryDatabase secondaryDb, final long id, final String... labels) {      
-    	this.graph = graph;
-    	
     	OperationStatus status;
-    	LongBinding.longToEntry(id, this.graph.key);
+    	LongBinding.longToEntry(id, graph.key);
     	
     	try {
             this.cursor = secondaryDb.openSecondaryCursor(null, null);
-            status = this.cursor.getSearchKey(this.graph.key, this.graph.pKey, this.graph.data, null);
+            status = this.cursor.getSearchKey(graph.key, graph.pKey, graph.data, null);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    	
+    	this.graph = graph;
     	
     	this.labels = new HashSet<String>();
     	for (String label : labels)
@@ -47,7 +47,7 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
         	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
         	this.useStoredKey = this.labels.contains(this.storedKey.label);
     	} else {
-        	close();
+        	this.close();
         }
     } 
     
@@ -77,7 +77,7 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	        	if (this.labels.contains(this.storedKey.label))
 	        		return new BdbEdge(this.graph, this.storedKey);
 	        } else {
-	            close();
+	            this.close();
 	            throw new NoSuchElementException();
 	        }
 	    }
@@ -109,7 +109,7 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 		        	return true;
 	        	}
 	        } else {
-	            close();
+	            this.close();
 	            return false;
 	        }
 	    }

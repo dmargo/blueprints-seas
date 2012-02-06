@@ -11,9 +11,43 @@ public class BdbPrimaryKey {
     public static final int EDGE = 2;
     public static final int EDGE_PROPERTY = 3;
 
-    public int type = -1;
-    public long id1 = -1;
-    public long id2 = -1;
-    public String label = null;
-    public String propertyKey = null;
+    public int type;
+    public long id1;
+    public long id2;
+    public String label;
+    public String propertyKey;
+    
+    public BdbPrimaryKey() {}
+    
+    public BdbPrimaryKey(final long id1) {
+    	this.type = BdbPrimaryKey.VERTEX;
+    	this.id1 = id1;
+    	this.id2 = 0;
+    	this.label = null;
+    	this.propertyKey = null;
+    }
+    
+    public BdbPrimaryKey(final long id1, final String propertyKey) {
+    	this.type = BdbPrimaryKey.VERTEX_PROPERTY;
+    	this.id1 = id1;
+    	this.id2 = 0;
+    	this.label = null;
+    	this.propertyKey = propertyKey;
+    }
+    
+    public BdbPrimaryKey(final long id1, final long id2, final String label) {
+    	this.type = BdbPrimaryKey.EDGE;
+    	this.id1 = id1;
+    	this.id2 = id2;
+    	this.label = label;
+    	this.propertyKey = null;
+    }
+    
+    public BdbPrimaryKey(final long id1, final long id2, final String label, final String propertyKey) {
+    	this.type = BdbPrimaryKey.EDGE_PROPERTY;
+    	this.id1 = id1;
+    	this.id2 = id2;
+    	this.label = label;
+    	this.propertyKey = propertyKey;
+    }
 }

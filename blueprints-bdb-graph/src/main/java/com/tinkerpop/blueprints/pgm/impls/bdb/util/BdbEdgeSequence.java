@@ -19,21 +19,21 @@ public class BdbEdgeSequence implements Iterator<Edge>, Iterable<Edge> {
     private BdbPrimaryKey storedKey;
     private boolean useStoredKey = false;
     
-    public BdbEdgeSequence(final BdbGraph graph) {  
-        this.graph = graph;
-        
+    public BdbEdgeSequence(final BdbGraph graph) {          
         OperationStatus status;
     	
         try {
             this.cursor = graph.outDb.openSecondaryCursor(null, null);
-            this.graph.key.setPartial(0, 0, true);
-            status = this.cursor.getFirst(this.graph.key, this.graph.pKey, this.graph.data, null);
-            this.graph.key.setPartial(false);
+            graph.key.setPartial(0, 0, true);
+            status = this.cursor.getFirst(graph.key, graph.pKey, graph.data, null);
+            graph.key.setPartial(false);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+        
+        this.graph = graph;
         
         if (status == OperationStatus.SUCCESS) {
         	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
@@ -90,10 +90,10 @@ public class BdbEdgeSequence implements Iterator<Edge>, Iterable<Edge> {
                
         if (status == OperationStatus.SUCCESS) {
         	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
-        	useStoredKey = true;
+        	this.useStoredKey = true;
         	return true;
         } else {
-            close();
+            this.close();
             return false;
         }	
 	}

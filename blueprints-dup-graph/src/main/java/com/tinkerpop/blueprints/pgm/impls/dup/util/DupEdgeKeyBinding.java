@@ -13,10 +13,7 @@ public class DupEdgeKeyBinding extends TupleBinding<DupEdgeKey> {
     }
 
     public DupEdgeKey entryToObject(TupleInput ti) {
-    	DupEdgeKey object = new DupEdgeKey();
-    	object.out = ti.readLong();
-    	object.label = ti.readString();
-    	object.in = ti.readLong();
+    	DupEdgeKey object = new DupEdgeKey(ti.readLong(), ti.readString(), ti.readLong());
     	return object;
     }
 } 

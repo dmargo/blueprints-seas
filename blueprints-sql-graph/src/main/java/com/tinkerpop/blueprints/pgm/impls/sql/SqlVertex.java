@@ -19,49 +19,32 @@ public class SqlVertex extends SqlElement implements Vertex {
     private SqlGraph graph = null;
     protected long vid = -1;
 
-    protected SqlVertex(final SqlGraph graph) {
-		try {
-			graph.addVertexStatement.executeUpdate();
-			ResultSet rs = graph.addVertexStatement.getGeneratedKeys();
-			
-			rs.next();
-			this.vid = rs.getLong(1);
-			
-			rs.close();
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+    protected SqlVertex(final SqlGraph graph) throws SQLException {
+		graph.addVertexStatement.executeUpdate();
 		
+		ResultSet rs = graph.addVertexStatement.getGeneratedKeys();
+		rs.next();
+		this.vid = rs.getLong(1);
+		rs.close();
+
 		this.graph = graph;
     }
 
-    protected SqlVertex(final SqlGraph graph, final Object id) {
-    	if(id.getClass() != Long.class)
-    		throw new RuntimeException(
-    			"SqlGraph: " + id + " is not a valid Vertex ID.");
+    protected SqlVertex(final SqlGraph graph, final Object id) throws SQLException {
+    	if(!(id instanceof Long))
+    		throw new IllegalArgumentException("SqlGraph: " + id + " is not a valid Vertex ID.");
     	
     	this.vid = ((Long) id).longValue();
-    	boolean exists;
     	
-    	try {
-    		graph.getVertexStatement.setLong(1, this.vid);
-    		ResultSet rs = graph.getVertexStatement.executeQuery();
-			
-			rs.next();
-			exists = rs.getBoolean(1);
-
-			rs.close();
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+		graph.getVertexStatement.setLong(1, this.vid);
+		ResultSet rs = graph.getVertexStatement.executeQuery();	
 		
+		rs.next();
+		boolean exists = rs.getBoolean(1);
+		rs.close();
+
 		if(!exists)
-			throw new RuntimeException(
-				"SqlGraph: Vertex " + id + " does not exist.");
+			throw new RuntimeException("SqlGraph: Vertex " + id + " does not exist.");
 		
 		this.graph = graph;
     }
@@ -71,7 +54,7 @@ public class SqlVertex extends SqlElement implements Vertex {
     	this.vid = vid;
     }
 
-    protected void remove() {
+    protected void remove() throws SQLException {
     	// Remove linked edges.
         for (Edge e : this.getInEdges())
         	((SqlEdge) e).remove();
@@ -79,17 +62,11 @@ public class SqlVertex extends SqlElement implements Vertex {
             ((SqlEdge) e).remove();
 
     	// Remove properties and vertex.
-        try {
-        	this.graph.removeVertexPropertiesStatement.setLong(1, this.vid);
-        	this.graph.removeVertexPropertiesStatement.executeUpdate();
-        	
-        	this.graph.removeVertexStatement.setLong(1, this.vid);
-        	this.graph.removeVertexStatement.executeUpdate();
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+    	this.graph.removeVertexPropertiesStatement.setLong(1, this.vid);
+    	this.graph.removeVertexPropertiesStatement.executeUpdate();
+    	
+    	this.graph.removeVertexStatement.setLong(1, this.vid);
+    	this.graph.removeVertexStatement.executeUpdate();
 
         this.vid = -1;
         this.graph = null;
@@ -195,8 +172,6 @@ public class SqlVertex extends SqlElement implements Vertex {
         	this.graph.removeVertexPropertyStatement.executeUpdate();
         	
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-    		
-            return result;
         } catch (RuntimeException e) {
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
@@ -204,6 +179,8 @@ public class SqlVertex extends SqlElement implements Vertex {
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
+        
+        return result;
     }
     
     public boolean equals(Object obj) {

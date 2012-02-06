@@ -33,9 +33,6 @@ public class DupGraph implements Graph {
     
     final public DatabaseEntry key = new DatabaseEntry();
     final public DatabaseEntry data = new DatabaseEntry();
-    
-    //protected Mode txnMode;
-    //protected Transaction txn;
 
     /**
      * Creates a new instance of a BdbGraph at directory.
@@ -75,9 +72,6 @@ public class DupGraph implements Graph {
             dbConfig.setRecordLength(0);
             this.vertexDb = this.dbEnv.openDatabase(null, "vertex.db", null, dbConfig);
             
-            //txnMode = Mode.AUTOMATIC;
-            //txn = null;
-
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -103,6 +97,9 @@ public class DupGraph implements Graph {
     }
 
     public Vertex getVertex(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("DupGraph.getVertex(id) cannot be null.");
+    	
     	try {
     		return new DupVertex(this, id);
     	} catch (Exception e) {
@@ -155,6 +152,9 @@ public class DupGraph implements Graph {
     }
 
     public Edge getEdge(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("DupGraph.getEdge(id) cannot be null.");
+    	
     	try {
     		return new DupEdge(this, id);
     	} catch (Exception e) {

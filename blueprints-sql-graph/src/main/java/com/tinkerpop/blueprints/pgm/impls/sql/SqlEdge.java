@@ -26,48 +26,30 @@ public class SqlEdge extends SqlElement implements Edge {
 		final SqlGraph graph,
 		final SqlVertex outVertex,
 		final SqlVertex inVertex,
-		final String label)
+		final String label) throws SQLException
     {
     	// First, verify in and out vertex existence.
-    	boolean exists;
-    	
-    	try {
-    		graph.getEdgeVerticesStatement.setLong(1, outVertex.vid);
-    		graph.getEdgeVerticesStatement.setLong(2, inVertex.vid);
-    		ResultSet rs = graph.getEdgeVerticesStatement.executeQuery();
-			
-			rs.next();
-			exists = rs.getBoolean(1);
-
-			rs.close();
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+		graph.getEdgeVerticesStatement.setLong(1, outVertex.vid);
+		graph.getEdgeVerticesStatement.setLong(2, inVertex.vid);
+		ResultSet rs = graph.getEdgeVerticesStatement.executeQuery();
+		
+		rs.next();
+		boolean exists = rs.getBoolean(1);
+		rs.close();
     	
 		if (!exists)
-			throw new RuntimeException(
-				"SqlGraph: Vertex " + outVertex.vid +
-				" or " + inVertex.vid + " does not exist.");
+			throw new RuntimeException("SqlGraph: Vertex " + outVertex.vid + " or " + inVertex.vid + " does not exist.");
 
 		// Then, insert a new edge record.
-		try {
-			graph.addEdgeStatement.setLong(1, outVertex.vid);
-			graph.addEdgeStatement.setLong(2, inVertex.vid);
-			graph.addEdgeStatement.setString(3, label);
-			graph.addEdgeStatement.executeUpdate();
-			ResultSet rs = graph.addEdgeStatement.getGeneratedKeys();
-			
-			rs.next();
-			this.eid = rs.getLong(1);
-			
-			rs.close();
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+		graph.addEdgeStatement.setLong(1, outVertex.vid);
+		graph.addEdgeStatement.setLong(2, inVertex.vid);
+		graph.addEdgeStatement.setString(3, label);
+		graph.addEdgeStatement.executeUpdate();
+		rs = graph.addEdgeStatement.getGeneratedKeys();
+		
+		rs.next();
+		this.eid = rs.getLong(1);
+		rs.close();
 				
 		this.graph = graph;
 		this.outId = outVertex.vid;
@@ -75,33 +57,24 @@ public class SqlEdge extends SqlElement implements Edge {
 		this.label = label;
     }
 
-    protected SqlEdge(final SqlGraph graph, final Object id) {
-    	if(id.getClass() != Long.class)
-    		throw new RuntimeException(
-				"SqlGraph: " + id + " is not a valid Edge ID.");
+    protected SqlEdge(final SqlGraph graph, final Object id) throws SQLException {
+    	if(!(id instanceof Long))
+    		throw new IllegalArgumentException("SqlGraph: " + id + " is not a valid Edge ID.");
     	
     	this.eid = ((Long) id).longValue();
     	
-    	try {
-    		graph.getEdgeStatement.setLong(1, this.eid);
-    		ResultSet rs = graph.getEdgeStatement.executeQuery();
-			
-			if (rs.next()) {
-				this.outId = rs.getLong(1);
-				this.inId = rs.getLong(2);
-				this.label = rs.getString(3);
-			}
-
-			rs.close();
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
+		graph.getEdgeStatement.setLong(1, this.eid);
+		ResultSet rs = graph.getEdgeStatement.executeQuery();
+		
+		if (rs.next()) {
+			this.outId = rs.getLong(1);
+			this.inId = rs.getLong(2);
+			this.label = rs.getString(3);
 		}
+		rs.close();
 		
 		if (this.outId == -1)
-			throw new RuntimeException(
-				"SqlGraph: Edge " + id + " does not exist.");
+			throw new RuntimeException("SqlGraph: Edge " + id + " does not exist.");
 		
 		this.graph = graph;
     } 
@@ -120,18 +93,12 @@ public class SqlEdge extends SqlElement implements Edge {
     	this.label = label;
     }
 
-    protected void remove() {
-        try {
-        	this.graph.removeEdgePropertiesStatement.setLong(1, this.eid);
-        	this.graph.removeEdgePropertiesStatement.executeUpdate();
-        	
-        	this.graph.removeEdgeStatement.setLong(1, this.eid);
-        	this.graph.removeEdgeStatement.executeUpdate();
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+    protected void remove() throws SQLException {
+    	this.graph.removeEdgePropertiesStatement.setLong(1, this.eid);
+    	this.graph.removeEdgePropertiesStatement.executeUpdate();
+    	
+    	this.graph.removeEdgeStatement.setLong(1, this.eid);
+    	this.graph.removeEdgeStatement.executeUpdate();
 		
 		this.label = null;
         this.inId = -1;
@@ -145,11 +112,23 @@ public class SqlEdge extends SqlElement implements Edge {
     }
 
     public Vertex getOutVertex() {
-    	return this.outId != -1 ? new SqlVertex(graph, new Long(this.outId)) : null;
+    	try {
+    		return this.outId != -1 ? new SqlVertex(graph, new Long(this.outId)) : null;
+    	} catch (RuntimeException e) {
+    		throw e;
+    	} catch (Exception e) {
+    		throw new RuntimeException(e.getMessage(), e);
+    	}
     }
 
     public Vertex getInVertex() {
-    	return this.inId != -1 ? new SqlVertex(graph, new Long(this.inId)) : null; 
+    	try {
+	    	return this.inId != -1 ? new SqlVertex(graph, new Long(this.inId)) : null;
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
     }
     
     public String getLabel() {
@@ -238,8 +217,6 @@ public class SqlEdge extends SqlElement implements Edge {
         	this.graph.removeEdgePropertyStatement.executeUpdate();
         	
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-    		
-            return result;
         } catch (RuntimeException e) {
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
@@ -247,6 +224,8 @@ public class SqlEdge extends SqlElement implements Edge {
             //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
+        
+        return result;
     }
     
     public boolean equals(Object obj) {

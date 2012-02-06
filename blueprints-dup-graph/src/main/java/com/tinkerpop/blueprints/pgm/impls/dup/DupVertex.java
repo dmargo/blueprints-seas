@@ -4,6 +4,7 @@ import com.sleepycat.bind.RecordNumberBinding;
 import com.sleepycat.bind.tuple.StringBinding;
 import com.sleepycat.db.Cursor;
 import com.sleepycat.db.DatabaseEntry;
+import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.OperationStatus;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
@@ -23,40 +24,20 @@ public class DupVertex extends DupElement implements Vertex {
     private DupGraph graph;
     protected DatabaseEntry id = new DatabaseEntry();
 
-    protected DupVertex(final DupGraph graph) {    	
-		OperationStatus status;
+    protected DupVertex(final DupGraph graph) throws DatabaseException{    	
 		graph.data.setSize(0);
-		
-		try {
-			status = graph.vertexDb.append(null, this.id, graph.data);
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
-		
-		if (status != OperationStatus.SUCCESS)
+		if (graph.vertexDb.append(null, this.id, graph.data) != OperationStatus.SUCCESS)
 			throw new RuntimeException("DupVertex: Failed to create vertex ID.");
 			
 		this.graph = graph;
     }
 
-    protected DupVertex(final DupGraph graph, final Object id) {
-    	if(id.getClass() != Long.class)
-    		throw new RuntimeException("DupVertex: " + id + " is not a valid vertex ID.");
+    protected DupVertex(final DupGraph graph, final Object id) throws DatabaseException {
+    	if(!(id instanceof Long))
+    		throw new IllegalArgumentException("DupVertex: " + id + " is not a valid vertex ID.");
     	
-        OperationStatus status;
     	RecordNumberBinding.recordNumberToEntry((Long) id, this.id);
-        
-        try {
-        	status = graph.vertexDb.exists(null, this.id);
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
-		
-		if (status != OperationStatus.SUCCESS)
+		if (graph.vertexDb.exists(null, this.id) != OperationStatus.SUCCESS)
 			throw new RuntimeException("DupVertex: Vertex " + id + " does not exist.");
 
         this.graph = graph;
@@ -68,7 +49,7 @@ public class DupVertex extends DupElement implements Vertex {
     	this.id.setData(id.getData().clone());
     }  
 
-    protected void remove() {
+    protected void remove() throws DatabaseException {
     	// Remove linked edge records.
         for (Edge e : this.getInEdges())
         	((DupEdge) e).remove();
@@ -76,14 +57,8 @@ public class DupVertex extends DupElement implements Vertex {
             ((DupEdge) e).remove();
 
     	// Remove properties and vertex record.
-        try {
-        	this.graph.vertexPropertyDb.delete(null, this.id);
-        	this.graph.vertexDb.delete(null, this.id);
-        } catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage(), e);
-		}
+    	this.graph.vertexPropertyDb.delete(null, this.id);
+    	this.graph.vertexDb.delete(null, this.id);
 
         this.id = null;
         this.graph = null;

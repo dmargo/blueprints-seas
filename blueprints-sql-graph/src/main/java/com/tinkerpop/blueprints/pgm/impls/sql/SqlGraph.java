@@ -211,6 +211,9 @@ public class SqlGraph implements Graph {
 
     protected PreparedStatement getVertexStatement;
     public Vertex getVertex(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("SqlGraph.getVertex(id) cannot be null.");
+    	
     	try {
     		return new SqlVertex(this, id);
     	} catch (Exception e) {
@@ -227,6 +230,7 @@ public class SqlGraph implements Graph {
     public void removeVertex(final Vertex vertex) {
         if (vertex == null || vertex.getId() == null)
             return;
+        
         try {
             //autoStartTransaction();
             ((SqlVertex) vertex).remove();
@@ -273,6 +277,9 @@ public class SqlGraph implements Graph {
 
     protected PreparedStatement getEdgeStatement;
     public Edge getEdge(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("SqlGraph.getEdge(id) cannot be null.");
+    	
     	try {
     		return new SqlEdge(this, id);
     	} catch (Exception e) {
@@ -289,6 +296,7 @@ public class SqlGraph implements Graph {
     public void removeEdge(final Edge edge) {
         if (edge == null || edge.getId() == null)
             return;
+        
         try {
             //autoStartTransaction();
             ((SqlEdge) edge).remove();

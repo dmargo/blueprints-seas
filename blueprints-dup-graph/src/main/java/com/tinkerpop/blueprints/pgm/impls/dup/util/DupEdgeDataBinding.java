@@ -12,9 +12,7 @@ public class DupEdgeDataBinding extends TupleBinding<DupEdgeData> {
     }
 
     public DupEdgeData entryToObject(TupleInput ti) {
-    	DupEdgeData object = new DupEdgeData();
-    	object.label = ti.readString();
-    	object.id = ti.readLong();
+    	DupEdgeData object = new DupEdgeData(ti.readString(), ti.readLong());
     	return object;
     }
 } 

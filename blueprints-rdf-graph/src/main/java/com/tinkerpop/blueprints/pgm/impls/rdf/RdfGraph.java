@@ -102,6 +102,9 @@ public class RdfGraph implements TransactionalGraph {
     }
 
     public Vertex getVertex(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("RdfGraph.getVertex(id) cannot be null.");
+    	
     	try {
     		return new RdfVertex(this, id);
     	} catch (Exception e) {
@@ -133,6 +136,9 @@ public class RdfGraph implements TransactionalGraph {
     }
     
     public Edge getEdge(final Object id) {
+    	if (id == null)
+    		throw new IllegalArgumentException("RdfGraph.getEdge(id) cannot be null.");
+    	
     	try {
     		return new RdfEdge(this, id);
     	} catch (Exception e) {

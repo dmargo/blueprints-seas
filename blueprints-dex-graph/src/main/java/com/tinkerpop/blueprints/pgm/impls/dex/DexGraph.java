@@ -107,7 +107,7 @@ public class DexGraph implements IndexableGraph {
             this.db = db;
             DEX.Config cfg = new DEX.Config();
             cfg.setCacheMaxSize(256);
-            cfg.setLicense("3YS9Q-99ATW-F179G-5HWTW");
+            cfg.setLicense("Q2JAZ-4DQRV-F5MX2-S4YZV");
             dex = new DEX(cfg);
             //dex = new DEX();
             gpool = (create ? dex.create(db) : dex.open(db));

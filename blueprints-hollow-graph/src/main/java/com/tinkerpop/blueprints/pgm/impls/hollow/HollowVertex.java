@@ -20,9 +20,10 @@ public class HollowVertex extends HollowElement implements Vertex {
 		this.graph = graph;
     }
 
-    protected HollowVertex(final HollowGraph graph, final Object id) {
+    protected HollowVertex(final HollowGraph graph, Object id) {
     	if(!(id instanceof Long))
-    		throw new IllegalArgumentException("HollowGraph: " + id + " is not a valid Vertex ID.");
+			id = new Long(0);
+    		//throw new IllegalArgumentException("HollowGraph: " + id + " is not a valid Vertex ID.");
     	
     	this.vid = ((Long) id).longValue();
 		this.graph = graph;

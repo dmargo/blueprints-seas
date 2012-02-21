@@ -31,13 +31,14 @@ public class HollowGraph implements Graph {
         }     
     }
 
-    public Vertex getVertex(final Object id) {
+    public Vertex getVertex(Object id) {
     	if (id == null)
-    		throw new IllegalArgumentException("HollowGraph.getVertex(id) cannot be null.");
+			id = new Long(0);
     	
     	try {
     		return new HollowVertex(this, id);
     	} catch (Exception e) {
+			//System.err.println("Warning: " + e);
     		return null;
     	}
     }
@@ -87,9 +88,9 @@ public class HollowGraph implements Graph {
         }
     }
 
-    public Edge getEdge(final Object id) {
+    public Edge getEdge(Object id) {
     	if (id == null)
-    		throw new IllegalArgumentException("HollowGraph.getEdge(id) cannot be null.");
+			id = new Long(0);
     	
     	try {
     		return new HollowEdge(this, id);

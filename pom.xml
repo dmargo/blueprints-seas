@@ -48,6 +48,7 @@
         <module>blueprints-dup-graph</module>
         <module>blueprints-graph-jung</module>
         <module>blueprints-graph-sail</module>
+	<module>blueprints-hollow-graph</module>
         <module>blueprints-neo4j-graph</module>
         <module>blueprints-neo4jbatch-graph</module>
         <!-- <module>blueprints-orient-graph</module> -->

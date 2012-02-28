@@ -13,21 +13,26 @@ import java.util.NoSuchElementException;
 public class HollowVertexSequence implements Iterable<Vertex>, Iterator<Vertex> {
 
     private HollowGraph graph = null;
-    private boolean hasNext = false;
+    private int i = 0;
     
     public HollowVertexSequence(final HollowGraph graph) {
         this.graph = graph;
     }
 	
 	public Vertex next() {
-		throw new NoSuchElementException();
+		if (i++ < this.graph.vertexCount) {
+			return new HollowVertex(this.graph, 0);
+		} else {
+			throw new NoSuchElementException();
+		}
 	}
 
 	public boolean hasNext() {
-		return this.hasNext;
+		return i < this.graph.vertexCount;
     }
 	
 	public void close() {
+		i = this.graph.vertexCount;
 	}
 
     public void remove() { 

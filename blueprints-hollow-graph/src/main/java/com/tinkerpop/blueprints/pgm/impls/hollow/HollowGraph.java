@@ -10,6 +10,9 @@ import com.tinkerpop.blueprints.pgm.impls.hollow.util.*;
  */
 public class HollowGraph implements Graph {
 
+	public int vertexCount = 0;
+	public int edgeCount = 0;
+	
     /**
      * Creates a new instance of a HollowGraph.
      */
@@ -20,6 +23,7 @@ public class HollowGraph implements Graph {
         try {
             //autoStartTransaction();
             final Vertex vertex = new HollowVertex(this);
+            this.vertexCount++;
             //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
             return vertex;
         } catch (RuntimeException e) {
@@ -54,6 +58,7 @@ public class HollowGraph implements Graph {
         try {
             //autoStartTransaction();
             ((HollowVertex) vertex).remove();
+            this.vertexCount--;
             //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
             //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
@@ -77,6 +82,7 @@ public class HollowGraph implements Graph {
         		(HollowVertex) outVertex,
         		(HollowVertex) inVertex,
         		label);
+            this.edgeCount++;
             //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
             return edge;
         } catch (RuntimeException e) {
@@ -110,6 +116,7 @@ public class HollowGraph implements Graph {
         try {
             //autoStartTransaction();
             ((HollowEdge) edge).remove();
+            this.edgeCount--;
             //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
             //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
@@ -120,9 +127,15 @@ public class HollowGraph implements Graph {
         }
     }
 
-    public void clear() {}
+    public void clear() {
+    	this.vertexCount = 0;
+    	this.edgeCount = 0;
+    }
     
-    public void delete() {}
+    public void delete() {
+    	this.vertexCount = 0;
+    	this.edgeCount = 0;
+    }
 
     public void shutdown() {}
 

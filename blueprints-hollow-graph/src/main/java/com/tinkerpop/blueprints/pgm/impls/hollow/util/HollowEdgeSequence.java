@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
 public class HollowEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
 
     private HollowGraph graph = null;
-    private boolean hasNext = false;
+    private int i = 0;
     
     public HollowEdgeSequence(final HollowGraph graph) {
         this.graph = graph;
@@ -28,14 +28,20 @@ public class HollowEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
     }
 	
 	public Edge next() {
-		throw new NoSuchElementException();
+		if (i++ < this.graph.edgeCount / this.graph.vertexCount ) {
+			return new HollowEdge(this.graph, 0, 0, 0, "");
+		} else {
+			throw new NoSuchElementException();
+		}
 	}
 
 	public boolean hasNext() {
-    	return this.hasNext;
+    	return i < this.graph.edgeCount / this.graph.vertexCount;
     }
 	
-	public void close() {}
+	public void close() {
+		i = this.graph.edgeCount / this.graph.vertexCount;
+	}
 
     public void remove() { 
         throw new UnsupportedOperationException(); 

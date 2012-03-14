@@ -16,7 +16,7 @@ public class HollowVertex extends HollowElement implements Vertex {
     protected long vid = -1;
 
     protected HollowVertex(final HollowGraph graph) {
-		this.vid = 0;
+		this.vid = graph.vertexCount++;
 		this.graph = graph;
     }
 
@@ -36,6 +36,7 @@ public class HollowVertex extends HollowElement implements Vertex {
 
     protected void remove() {
         this.vid = -1;
+        this.graph.vertexCount--;
         this.graph = null;
     }
     

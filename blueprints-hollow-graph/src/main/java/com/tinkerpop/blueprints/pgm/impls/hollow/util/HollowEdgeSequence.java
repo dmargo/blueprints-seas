@@ -6,48 +6,62 @@ import com.tinkerpop.blueprints.pgm.impls.hollow.HollowEdge;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 /**
  * @author Elaine Angelino (http://www.eecs.harvard.edu/~elaine)
  */
 public class HollowEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
 	
-	private static Random rand = new Random();
-
     private HollowGraph graph = null;
-    private int i = 0;
-    private int degree = 0;
+    private long vid = -1;
+    private boolean getOut = true;
+    
+    private long i = 0;
+    private long degree = 0;
     
     public HollowEdgeSequence(final HollowGraph graph) {
         this.graph = graph;
         
-        int avgDegree = (graph.edgeCount + graph.vertexCount - 1) / graph.vertexCount;
-        this.degree = rand.nextInt(2 * avgDegree + 1);
+        this.degree = graph.edgeCount;
     }
     
     public HollowEdgeSequence(final HollowGraph graph, final long vid, final boolean getOut) {
         this.graph = graph;
+        this.vid = vid;
+        this.getOut = true;
+        
+        long avgDegree = (graph.edgeCount + graph.vertexCount - 1) / graph.vertexCount;
+        this.degree = (long) (this.graph.rand.nextDouble() * (2 * avgDegree + 1));
     }
     
     public HollowEdgeSequence(final HollowGraph graph, final long vid, final boolean getOut, final String[] labels) {
         this.graph = graph;
+        this.vid = vid;
+        this.getOut = true;
+        
+        long avgDegree = (graph.edgeCount + graph.vertexCount - 1) / graph.vertexCount;
+        this.degree = (long) (this.graph.rand.nextDouble() * (2 * avgDegree + 1));
     }
 	
 	public Edge next() {
-		if (i++ < degree ) {
-			return new HollowEdge(this.graph, 0, 0, 0, "");
+		if (this.i++ < this.degree ) {
+			if (this.vid == -1)
+				return new HollowEdge(this.graph, this.i, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, "");
+			else if (getOut)
+				return new HollowEdge(this.graph, (long) this.graph.rand.nextDouble() * this.graph.edgeCount, this.vid, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, "");
+			else
+				return new HollowEdge(this.graph, (long) this.graph.rand.nextDouble() * this.graph.edgeCount, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, this.vid, "");
 		} else {
 			throw new NoSuchElementException();
 		}
 	}
 
 	public boolean hasNext() {
-    	return i < degree;
+    	return i < this.degree;
     }
 	
 	public void close() {
-		i = degree;
+		i = this.degree;
 	}
 
     public void remove() { 

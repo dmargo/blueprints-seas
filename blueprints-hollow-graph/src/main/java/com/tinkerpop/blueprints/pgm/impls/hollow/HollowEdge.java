@@ -27,7 +27,7 @@ public class HollowEdge extends HollowElement implements Edge {
     	this.label = label;
     	this.inId = inVertex.vid;
     	this.outId = outVertex.vid;
-    	this.eid = 0;
+    	this.eid = graph.edgeCount++;
     	this.graph = graph;
     }
 
@@ -36,8 +36,8 @@ public class HollowEdge extends HollowElement implements Edge {
     		throw new IllegalArgumentException("HollowGraph: " + id + " is not a valid Edge ID.");
     	
     	this.label = "";
-    	this.inId = 0;
-    	this.outId = 0;
+    	this.inId = (long) graph.rand.nextDouble() * graph.vertexCount;
+    	this.outId = (long) graph.rand.nextDouble() * graph.vertexCount;
     	this.eid = ((Long) id).longValue();
 		this.graph = graph;
     } 
@@ -61,6 +61,7 @@ public class HollowEdge extends HollowElement implements Edge {
         this.inId = -1;
         this.outId = -1;
         this.eid = -1;
+        this.graph.edgeCount--;
         this.graph = null;
     }
 

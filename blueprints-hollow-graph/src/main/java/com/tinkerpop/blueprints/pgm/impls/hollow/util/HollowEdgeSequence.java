@@ -46,11 +46,11 @@ public class HollowEdgeSequence implements Iterable<Edge>, Iterator<Edge> {
 	public Edge next() {
 		if (this.i++ < this.degree ) {
 			if (this.vid == -1)
-				return new HollowEdge(this.graph, this.i, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, "");
+				return new HollowEdge(this.graph, this.i, (long) (this.graph.rand.nextDouble() * this.graph.vertexCount), (long) (this.graph.rand.nextDouble() * this.graph.vertexCount), "");
 			else if (getOut)
-				return new HollowEdge(this.graph, (long) this.graph.rand.nextDouble() * this.graph.edgeCount, this.vid, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, "");
+				return new HollowEdge(this.graph, (long) (this.graph.rand.nextDouble() * this.graph.edgeCount), this.vid, (long) (this.graph.rand.nextDouble() * this.graph.vertexCount), "");
 			else
-				return new HollowEdge(this.graph, (long) this.graph.rand.nextDouble() * this.graph.edgeCount, (long) this.graph.rand.nextDouble() * this.graph.vertexCount, this.vid, "");
+				return new HollowEdge(this.graph, (long) (this.graph.rand.nextDouble() * this.graph.edgeCount), (long) (this.graph.rand.nextDouble() * this.graph.vertexCount), this.vid, "");
 		} else {
 			throw new NoSuchElementException();
 		}

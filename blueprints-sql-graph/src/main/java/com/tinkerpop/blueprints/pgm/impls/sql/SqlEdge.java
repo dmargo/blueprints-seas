@@ -1,6 +1,7 @@
 package com.tinkerpop.blueprints.pgm.impls.sql;
 
 import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
@@ -28,8 +29,11 @@ public class SqlEdge extends SqlElement implements Edge {
 		final SqlVertex inVertex,
 		final String label) throws SQLException
     {
-    	// First, verify in and out vertex existence.
-		graph.getEdgeVerticesStatement.setLong(1, outVertex.vid);
+    	ResultSet rs;
+    	
+    	// No need to verify in and out vertex existence, since the database integrity constrains already take care of it
+    	
+		/*graph.getEdgeVerticesStatement.setLong(1, outVertex.vid);
 		graph.getEdgeVerticesStatement.setLong(2, inVertex.vid);
 		ResultSet rs = graph.getEdgeVerticesStatement.executeQuery();
 		
@@ -38,7 +42,7 @@ public class SqlEdge extends SqlElement implements Edge {
 		rs.close();
     	
 		if (!exists)
-			throw new RuntimeException("SqlGraph: Vertex " + outVertex.vid + " or " + inVertex.vid + " does not exist.");
+			throw new RuntimeException("SqlGraph: Vertex " + outVertex.vid + " or " + inVertex.vid + " does not exist.");*/
 
 		// Then, insert a new edge record.
 		graph.addEdgeStatement.setLong(1, outVertex.vid);
@@ -187,19 +191,19 @@ public class SqlEdge extends SqlElement implements Edge {
         	ObjectOutputStream oos = new ObjectOutputStream(baos);
         	oos.writeObject(value);
         	
-            //graph.autoStartTransaction();
+            graph.autoStartTransaction();
         	
         	this.graph.setEdgePropertyStatement.setLong(1, this.eid);
         	this.graph.setEdgePropertyStatement.setString(2, propertyKey);
         	this.graph.setEdgePropertyStatement.setBytes(3, baos.toByteArray());
         	this.graph.setEdgePropertyStatement.executeUpdate();
         	
-        	//graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -208,7 +212,7 @@ public class SqlEdge extends SqlElement implements Edge {
     	Object result = null;
     	
         try {
-            //graph.autoStartTransaction();
+            graph.autoStartTransaction();
         	
         	result = this.getProperty(propertyKey);
         	
@@ -216,12 +220,12 @@ public class SqlEdge extends SqlElement implements Edge {
         	this.graph.removeEdgePropertyStatement.setString(2, propertyKey);
         	this.graph.removeEdgePropertyStatement.executeUpdate();
         	
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
         

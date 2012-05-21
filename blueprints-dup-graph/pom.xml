@@ -22,8 +22,8 @@
         </dependency>
         <dependency>
             <groupId>com.sleepycat.db</groupId>
-            <artifactId>libdb4.8-java</artifactId>
-            <version>4.8</version>
+            <artifactId>libdb5.1-java</artifactId>
+            <version>5.1</version>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>

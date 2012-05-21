@@ -45,7 +45,14 @@ public interface Graph {
      * @return an iterable reference to all vertices in the graph
      */
     public Iterable<Vertex> getVertices();
-
+    
+    /**
+     * Return a random vertex.
+     * 
+     * @return a random vertex
+     */
+    public Vertex getRandomVertex();
+    
     /**
      * Add an edge to the graph. The added edges requires a recommended identifier, a tail vertex, an head vertex, and a label.
      * Like adding a vertex, the provided object identifier is can be ignored by the implementation.
@@ -81,6 +88,13 @@ public interface Graph {
      * @return an iterable reference to all edges in the graph
      */
     public Iterable<Edge> getEdges();
+    
+    /**
+     * Return a random edge.
+     * 
+     * @return a random edge
+     */
+    public Edge getRandomEdge();
 
     /**
      * Remove all the edges and vertices from the graph.

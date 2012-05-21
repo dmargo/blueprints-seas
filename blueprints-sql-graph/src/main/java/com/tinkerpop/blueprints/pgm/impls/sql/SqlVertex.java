@@ -11,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.sql.*;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;;
 
 /**
@@ -53,6 +54,30 @@ public class SqlVertex extends SqlElement implements Vertex {
     public SqlVertex(final SqlGraph graph, final long vid) {
     	this.graph = graph;
     	this.vid = vid;
+    }
+    
+    public static SqlVertex getRandomVertex(final SqlGraph graph) throws SQLException {
+    	
+		ResultSet rs = graph.getMaxVertexIdStatement.executeQuery();
+		rs.next();
+		long max = rs.getLong(1);
+		rs.close();
+
+		graph.getVertexAfterStatement.setLong(1, (long) (Math.random() * max));
+		rs = graph.getVertexAfterStatement.executeQuery();
+		if (!rs.next()) {
+			rs.close();
+			graph.getVertexAfterStatement.setLong(1, 0);
+			rs = graph.getVertexAfterStatement.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				throw new NoSuchElementException();
+			}
+		}
+		long id = rs.getLong(1);
+		rs.close();
+
+		return new SqlVertex(graph, id);
     }
 
     protected void remove() throws SQLException {

@@ -17,11 +17,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -29,13 +31,16 @@ import java.util.Set;
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
+@SuppressWarnings("serial")
 public class TinkerGraph implements IndexableGraph, Serializable {
 
     private Long currentId = 0l;
     protected Map<String, Vertex> vertices = new HashMap<String, Vertex>();
     protected Map<String, Edge> edges = new HashMap<String, Edge>();
-    protected Map<String, TinkerIndex> indices = new HashMap<String, TinkerIndex>();
-    protected Map<String, TinkerAutomaticIndex> autoIndices = new HashMap<String, TinkerAutomaticIndex>();
+    @SuppressWarnings("rawtypes")
+	protected Map<String, TinkerIndex> indices = new HashMap<String, TinkerIndex>();
+    @SuppressWarnings("rawtypes")
+	protected Map<String, TinkerAutomaticIndex> autoIndices = new HashMap<String, TinkerAutomaticIndex>();
     private final String directory;
     private static final String GRAPH_FILE = "/tinkergraph.dat";
 
@@ -71,17 +76,20 @@ public class TinkerGraph implements IndexableGraph, Serializable {
         this.createAutomaticIndex(Index.EDGES, TinkerEdge.class, null);
     }
 
-    protected Iterable<TinkerAutomaticIndex> getAutoIndices() {
+    @SuppressWarnings("rawtypes")
+	protected Iterable<TinkerAutomaticIndex> getAutoIndices() {
         return this.autoIndices.values();
     }
 
-    protected Iterable<TinkerIndex> getManualIndices() {
+    @SuppressWarnings("rawtypes")
+	protected Iterable<TinkerIndex> getManualIndices() {
         final HashSet<TinkerIndex> indices = new HashSet<TinkerIndex>(this.indices.values());
         indices.removeAll(this.autoIndices.values());
         return indices;
     }
 
-    public <T extends Element> AutomaticIndex<T> createAutomaticIndex(final String indexName, final Class<T> indexClass, Set<String> keys) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public <T extends Element> AutomaticIndex<T> createAutomaticIndex(final String indexName, final Class<T> indexClass, Set<String> keys) {
         if (this.indices.containsKey(indexName))
             throw new RuntimeException("Index already exists: " + indexName);
 
@@ -91,7 +99,8 @@ public class TinkerGraph implements IndexableGraph, Serializable {
         return index;
     }
 
-    public <T extends Element> Index<T> createManualIndex(final String indexName, final Class<T> indexClass) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public <T extends Element> Index<T> createManualIndex(final String indexName, final Class<T> indexClass) {
         if (this.indices.containsKey(indexName))
             throw new RuntimeException("Index already exists: " + indexName);
 
@@ -100,7 +109,8 @@ public class TinkerGraph implements IndexableGraph, Serializable {
         return index;
     }
 
-    public <T extends Element> Index<T> getIndex(final String indexName, final Class<T> indexClass) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public <T extends Element> Index<T> getIndex(final String indexName, final Class<T> indexClass) {
         Index index = this.indices.get(indexName);
         if (null == index)
             return null;
@@ -110,7 +120,8 @@ public class TinkerGraph implements IndexableGraph, Serializable {
             return (Index<T>) index;
     }
 
-    public Iterable<Index<? extends Element>> getIndices() {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public Iterable<Index<? extends Element>> getIndices() {
         final List<Index<? extends Element>> list = new ArrayList<Index<? extends Element>>();
         for (Index index : indices.values()) {
             list.add(index);
@@ -173,8 +184,33 @@ public class TinkerGraph implements IndexableGraph, Serializable {
     public Iterable<Edge> getEdges() {
         return new LinkedList<Edge>(edges.values());
     }
+    
+    public Vertex getRandomVertex() {
+    	if (vertices.isEmpty()) throw new NoSuchElementException();
+    	Collection<Vertex> c = vertices.values();
+    	int item = (int) (Math.random() * c.size());
+    	if (item == c.size()) item = 0;
+    	int i = 0;
+    	for (Vertex x : c) {
+    		if (i++ == item) return x;
+    	}
+    	throw new InternalError();
+    }
+    
+    public Edge getRandomEdge() {
+    	if (edges.isEmpty()) throw new NoSuchElementException();
+    	Collection<Edge> c = edges.values();
+    	int item = (int) (Math.random() * c.size());
+    	if (item == c.size()) item = 0;
+    	int i = 0;
+    	for (Edge x : c) {
+    		if (i++ == item) return x;
+    	}
+    	throw new InternalError();
+    }
 
-    public void removeVertex(final Vertex vertex) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public void removeVertex(final Vertex vertex) {
         Set<Edge> toRemove = new HashSet<Edge>();
         for (Edge edge : vertex.getInEdges()) {
             toRemove.add(edge);
@@ -226,7 +262,8 @@ public class TinkerGraph implements IndexableGraph, Serializable {
 
     }
 
-    public void removeEdge(final Edge edge) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void removeEdge(final Edge edge) {
         TinkerVertex outVertex = (TinkerVertex) edge.getOutVertex();
         TinkerVertex inVertex = (TinkerVertex) edge.getInVertex();
         if (null != outVertex && null != outVertex.outEdges)

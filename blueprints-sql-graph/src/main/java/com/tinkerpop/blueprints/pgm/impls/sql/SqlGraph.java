@@ -14,6 +14,8 @@ public class SqlGraph implements TransactionalGraph {
 	private String addr = null;
 	public Connection connection = null;
 	
+	// XXX The prepared statements need to be moved to thread-local storage or pools
+	
     private final ThreadLocal<Boolean> tx = new ThreadLocal<Boolean>() {
         protected Boolean initialValue() {
             return false;
@@ -154,9 +156,14 @@ public class SqlGraph implements TransactionalGraph {
         	this.addVertexStatement = this.connection.prepareStatement(
         			"insert into vertex values(default)",
         			Statement.RETURN_GENERATED_KEYS);
-        	
+           	
         	this.getVertexStatement = this.connection.prepareStatement(
         			"select exists(select * from vertex where vid=?)");
+           	
+        	this.getMaxVertexIdStatement = this.connection.prepareStatement(
+        			"select max(vid) from vertex;");
+        	this.getVertexAfterStatement = this.connection.prepareStatement(
+        			"select vid from vertex where vid >= ? order by vid limit 1;");
         	
         	this.removeVertexStatement = this.connection.prepareStatement(
         			"delete from vertex where vid=?");
@@ -183,7 +190,12 @@ public class SqlGraph implements TransactionalGraph {
         	
         	this.getEdgeStatement = this.connection.prepareStatement(
         			"select outid,inid,label from edge where eid=?");
-        	
+           	
+        	this.getMaxEdgeIdStatement = this.connection.prepareStatement(
+        			"select max(eid) from edge;");
+        	this.getEdgeAfterStatement = this.connection.prepareStatement(
+        			"select eid,outid,inid,label from edge where eid >= ? order by eid limit 1;");
+
         	this.removeEdgeStatement = this.connection.prepareStatement(
         			"delete from edge where eid=?");
         	this.removeEdgePropertiesStatement = this.connection.prepareStatement(
@@ -240,6 +252,17 @@ public class SqlGraph implements TransactionalGraph {
 
     public Iterable<Vertex> getVertices() {
         return new SqlVertexSequence(this);
+    }
+    
+    protected PreparedStatement getMaxVertexIdStatement;
+    protected PreparedStatement getVertexAfterStatement;
+    public Vertex getRandomVertex() {
+    	try {
+    		return SqlVertex.getRandomVertex(this);
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
     }
 
     protected PreparedStatement removeVertexStatement;
@@ -306,6 +329,17 @@ public class SqlGraph implements TransactionalGraph {
 
     public Iterable<Edge> getEdges() {
         return new SqlEdgeSequence(this);
+    }
+    
+    protected PreparedStatement getMaxEdgeIdStatement;
+    protected PreparedStatement getEdgeAfterStatement; 
+    public Edge getRandomEdge() {
+    	try {
+    		return SqlEdge.getRandomEdge(this);
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
     }
 
     protected PreparedStatement removeEdgeStatement;

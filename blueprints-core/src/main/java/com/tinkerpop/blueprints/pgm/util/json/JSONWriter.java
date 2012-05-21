@@ -98,7 +98,8 @@ public final class JSONWriter {
         return jsonElement;
     }
 
-    private static ArrayNode createJSONList(final List list, final List<String> propertyKeys, final boolean showTypes) {
+    @SuppressWarnings("rawtypes")
+	private static ArrayNode createJSONList(final List list, final List<String> propertyKeys, final boolean showTypes) {
         final ArrayNode jsonList = jsonNodeFactory.arrayNode();
         for (Object item : list) {
             if (item instanceof Element) {
@@ -116,7 +117,8 @@ public final class JSONWriter {
         return jsonList;
     }
 
-    private static ObjectNode createJSONMap(final Map map, final List<String> propertyKeys, final boolean showTypes) {
+    @SuppressWarnings("rawtypes")
+	private static ObjectNode createJSONMap(final Map map, final List<String> propertyKeys, final boolean showTypes) {
         final ObjectNode jsonMap = jsonNodeFactory.objectNode();
         for (Object key : map.keySet()) {
             Object value = map.get(key);
@@ -186,7 +188,8 @@ public final class JSONWriter {
         }
     }
 
-    private static Map createPropertyMap(final Element element, final List<String> propertyKeys) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Map createPropertyMap(final Element element, final List<String> propertyKeys) {
         final Map map = new HashMap<String, Object>();
 
         if (propertyKeys == null) {
@@ -205,7 +208,8 @@ public final class JSONWriter {
         return map;
     }
 
-    private static Object getValue(Object value, final boolean includeType) {
+    @SuppressWarnings("rawtypes")
+	private static Object getValue(Object value, final boolean includeType) {
 
         Object returnValue = value;
 
@@ -291,7 +295,8 @@ public final class JSONWriter {
         return theValue;
     }
 
-    private static List convertArrayToList(final Object value) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private static List convertArrayToList(final Object value) {
 
         // is there seriously no better way to do this...bah!
         List list = new ArrayList();

@@ -12,11 +12,13 @@ import java.util.Set;
  */
 public class ReadOnlyAutomaticIndex<T extends Element> extends ReadOnlyIndex<T> implements AutomaticIndex<T> {
 
-    public ReadOnlyAutomaticIndex(final AutomaticIndex autoIndex) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public ReadOnlyAutomaticIndex(final AutomaticIndex autoIndex) {
         super(autoIndex);
     }
 
-    public Set<String> getAutoIndexKeys() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public Set<String> getAutoIndexKeys() {
         return new HashSet<String>(((AutomaticIndex) this.rawIndex).getAutoIndexKeys());
     }
 

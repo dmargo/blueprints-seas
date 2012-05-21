@@ -42,7 +42,8 @@ public class EventIndexableGraph extends EventGraph implements IndexableGraph {
             return new EventAutomaticIndex<T>((AutomaticIndex<T>) index, this.graphChangedListeners);
     }
 
-    public Iterable<Index<? extends Element>> getIndices() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public Iterable<Index<? extends Element>> getIndices() {
         return new EventIndexSequence(((IndexableGraph) this.rawGraph).getIndices().iterator(), this.graphChangedListeners);
     }
 

@@ -182,7 +182,8 @@ public class VertexTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testVertexIterator() {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public void testVertexIterator() {
         Graph graph = graphTest.getGraphInstance();
         int vertexCount = 5000;
         if (graphTest.supportsVertexIteration) {

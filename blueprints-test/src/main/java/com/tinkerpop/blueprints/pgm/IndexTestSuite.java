@@ -134,7 +134,7 @@ public class IndexTestSuite extends TestSuite {
             }
             CloseableSequence<Vertex> hits = index.get("dog", "puppy");
             int counter = 0;
-            for (Vertex v : hits) {
+            for (@SuppressWarnings("unused") Vertex v : hits) {
                 counter++;
 
             }

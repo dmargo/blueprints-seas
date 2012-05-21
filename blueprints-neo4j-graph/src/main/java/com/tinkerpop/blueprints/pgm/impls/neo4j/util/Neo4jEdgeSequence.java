@@ -39,7 +39,8 @@ public class Neo4jEdgeSequence<T extends Edge> implements CloseableSequence<Neo4
         return this;
     }
 
-    public void close() {
+    @SuppressWarnings("rawtypes")
+	public void close() {
         if (this.relationships instanceof IndexHits) {
             ((IndexHits) this.relationships).close();
         }

@@ -14,6 +14,7 @@ import com.tinkerpop.blueprints.pgm.impls.dup.util.DupEdgeVertexSequence;
 import com.tinkerpop.blueprints.pgm.impls.dup.util.DupPropertyData;
 
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -48,6 +49,28 @@ public class DupVertex extends DupElement implements Vertex {
     	this.id = new DatabaseEntry();
     	this.id.setData(id.getData().clone());
     }  
+    
+    public static DupVertex getRandomVertex(final DupGraph graph) throws DatabaseException {
+    	
+    	// Note: This implementation assumes that the number of vertex deletions is negligible
+    	// as compared to the total number of nodes
+    	
+		// Get the last ID# in the graph.
+		Cursor cursor = graph.vertexDb.openCursor(null, null);
+        OperationStatus status = cursor.getLast(graph.key, graph.data, null);
+        cursor.close();
+        if (status == OperationStatus.NOTFOUND) throw new NoSuchElementException();
+        long lastId = RecordNumberBinding.entryToRecordNumber(graph.key);
+        
+        // Get a random element
+        cursor = graph.vertexDb.openCursor(null, null);
+        RecordNumberBinding.recordNumberToEntry((long)(1 + lastId * Math.random()), graph.key);
+        status = cursor.getSearchKeyRange(graph.key, graph.data, null);
+        cursor.close();
+        if (status == OperationStatus.NOTFOUND) throw new InternalError();
+        
+        return new DupVertex(graph, graph.key);
+    }
 
     protected void remove() throws DatabaseException {
     	// Remove linked edge records.

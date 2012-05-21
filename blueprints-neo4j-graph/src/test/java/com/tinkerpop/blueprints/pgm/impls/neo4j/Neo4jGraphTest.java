@@ -167,7 +167,8 @@ public class Neo4jGraphTest extends GraphTest {
         IndexableGraph graph = new Neo4jGraph(directory);
         Vertex a = graph.addVertex(null);
         a.setProperty("name", "marko");
-        Iterator itty = graph.getIndex(Index.VERTICES, Vertex.class).get("name", Neo4jTokens.QUERY_HEADER + "*rko").iterator();
+        @SuppressWarnings("rawtypes")
+		Iterator itty = graph.getIndex(Index.VERTICES, Vertex.class).get("name", Neo4jTokens.QUERY_HEADER + "*rko").iterator();
         int counter = 0;
         while (itty.hasNext()) {
             counter++;

@@ -11,13 +11,15 @@ import java.io.Serializable;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
+@SuppressWarnings("serial")
 public class TinkerEdge extends TinkerElement implements Edge, Serializable {
 
     private final String label;
     private final Vertex inVertex;
     private final Vertex outVertex;
 
-    protected TinkerEdge(final String id, final Vertex outVertex, final Vertex inVertex, final String label, final TinkerGraph graph) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	protected TinkerEdge(final String id, final Vertex outVertex, final Vertex inVertex, final String label, final TinkerGraph graph) {
         super(id, graph);
         this.label = label;
         this.outVertex = outVertex;

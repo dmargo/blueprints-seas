@@ -13,7 +13,6 @@ import edu.upc.dama.dex.core.DEX;
 import edu.upc.dama.dex.core.Objects;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -107,7 +106,7 @@ public class DexGraph implements IndexableGraph {
             this.db = db;
             DEX.Config cfg = new DEX.Config();
             cfg.setCacheMaxSize(256);
-            cfg.setLicense("Q2JAZ-4DQRV-F5MX2-S4YZV");
+            //cfg.setLicense("Q2JAZ-4DQRV-F5MX2-S4YZV");
             dex = new DEX(cfg);
             //dex = new DEX();
             gpool = (create ? dex.create(db) : dex.open(db));
@@ -203,6 +202,19 @@ public class DexGraph implements IndexableGraph {
                 Vertex.class);
         return ret;
     }
+    
+    @Override
+    public Vertex getRandomVertex() {
+    	
+    	// XXX Slow
+    	
+    	long item = (long)(Math.random() * rawGraph.nodes());
+    	long i = 0;
+    	for (Vertex v : getVertices()) {
+    		if (i++ == item) return v;
+    	}
+    	throw new InternalError();
+    }
 
     /*
       * (non-Javadoc)
@@ -277,6 +289,19 @@ public class DexGraph implements IndexableGraph {
             objs.close();
         }
         return new DexIterable<Edge>(this, result, Edge.class);
+    }
+    
+    @Override
+    public Edge getRandomEdge() {
+    	
+    	// XXX Slow
+    	
+    	long item = (long)(Math.random() * rawGraph.edges());
+    	long i = 0;
+    	for (Edge e : getEdges()) {
+    		if (i++ == item) return e;
+    	}
+    	throw new InternalError();
     }
 
     /*
@@ -368,7 +393,8 @@ public class DexGraph implements IndexableGraph {
       * com.tinkerpop.blueprints.pgm.IndexableGraph#getIndex(java.lang.String,
       * java.lang.Class)
       */
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public <T extends Element> Index<T> getIndex(final String indexName, final Class<T> indexClass) {
         if (indexName.compareTo(Index.VERTICES) == 0 || indexName.compareTo(Index.EDGES) == 0)
             return null;

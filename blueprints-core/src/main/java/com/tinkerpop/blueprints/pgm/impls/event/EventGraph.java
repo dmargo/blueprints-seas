@@ -119,7 +119,16 @@ public class EventGraph implements Graph {
     public Iterable<Vertex> getVertices() {
         return new EventVertexSequence(this.rawGraph.getVertices().iterator(), this.graphChangedListeners);
     }
-
+    
+    public Vertex getRandomVertex() {
+    	final Vertex vertex = this.rawGraph.getRandomVertex();
+        if (vertex == null) {
+            return null;
+        } else {
+            return new EventVertex(vertex, this.graphChangedListeners);
+        }
+    }
+    
     /**
      * Raises an edgeAdded event.
      */
@@ -138,7 +147,8 @@ public class EventGraph implements Graph {
         if (edge == null) {
             return null;
         } else {
-            return new EventEdge(edge, this.graphChangedListeners);
+          this.onEdgeAdded(edge);
+          return new EventEdge(edge, this.graphChangedListeners);
         }
     }
 
@@ -147,7 +157,6 @@ public class EventGraph implements Graph {
         if (edge == null) {
             return null;
         } else {
-            this.onEdgeAdded(edge);
             return new EventEdge(edge, this.graphChangedListeners);
         }
     }
@@ -167,6 +176,15 @@ public class EventGraph implements Graph {
 
     public Iterable<Edge> getEdges() {
         return new EventEdgeSequence(this.rawGraph.getEdges().iterator(), this.graphChangedListeners);
+    }
+    
+    public Edge getRandomEdge() {
+    	final Edge edge = this.rawGraph.getRandomEdge();
+        if (edge == null) {
+            return null;
+        } else {
+           return new EventEdge(edge, this.graphChangedListeners);
+        }
     }
 
     public void clear() {

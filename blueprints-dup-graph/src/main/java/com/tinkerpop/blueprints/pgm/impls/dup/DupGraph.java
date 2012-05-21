@@ -3,6 +3,7 @@ package com.tinkerpop.blueprints.pgm.impls.dup;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
 import com.sleepycat.db.DatabaseEntry;
+import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.DatabaseType;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.EnvironmentConfig;
@@ -30,6 +31,8 @@ public class DupGraph implements Graph {
     public Database inDb;
     protected Database vertexPropertyDb;
     protected Database edgePropertyDb;
+    
+    // XXX This causes major concurrency problems
     
     final public DatabaseEntry key = new DatabaseEntry();
     final public DatabaseEntry data = new DatabaseEntry();
@@ -126,6 +129,15 @@ public class DupGraph implements Graph {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
+    
+    public Vertex getRandomVertex() {
+    	try {
+    		return DupVertex.getRandomVertex(this);
+    	}
+    	catch (DatabaseException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
 
     public Edge addEdge(
 		final Object id,
@@ -180,6 +192,15 @@ public class DupGraph implements Graph {
             //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+    
+    public Edge getRandomEdge() {
+    	try {
+    		return DupEdge.getRandomEdge(this);
+    	}
+    	catch (DatabaseException e) {
+    		throw new RuntimeException(e);
+    	}
     }
 
     public void clear() {

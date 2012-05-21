@@ -62,10 +62,26 @@ public class ReadOnlyGraph implements Graph {
             return new ReadOnlyEdge(edge);
     }
 
+    public Edge getRandomEdge() {
+        final Edge edge = this.rawGraph.getRandomEdge();
+        if (null == edge)
+            return null;
+        else
+            return new ReadOnlyEdge(edge);
+    }
+
     public Iterable<Vertex> getVertices() {
         return new ReadOnlyVertexSequence(this.rawGraph.getVertices().iterator());
     }
 
+    public Vertex getRandomVertex() {
+        final Vertex vertex = this.rawGraph.getRandomVertex();
+        if (null == vertex)
+            return null;
+        else
+            return new ReadOnlyVertex(vertex);
+    }
+    
     /**
      * @throws UnsupportedOperationException
      */

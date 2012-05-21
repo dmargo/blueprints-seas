@@ -61,7 +61,8 @@ public class DexIterable<T extends Element> implements CloseableSequence<T> {
         return itty.hasNext();
     }
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public T next() {
         long oid = itty.next();
         if (oid == -1)

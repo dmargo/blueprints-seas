@@ -34,7 +34,8 @@ public class ReadOnlyVertexSequence implements CloseableSequence<Vertex> {
         return itty.hasNext();
     }
 
-    public void close() {
+    @SuppressWarnings("rawtypes")
+	public void close() {
         if (itty instanceof CloseableSequence) {
             ((CloseableSequence) itty).close();
         }

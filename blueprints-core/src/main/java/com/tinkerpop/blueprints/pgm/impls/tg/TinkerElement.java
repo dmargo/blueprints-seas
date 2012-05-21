@@ -13,6 +13,7 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
+@SuppressWarnings("serial")
 public abstract class TinkerElement implements Element, Serializable {
 
     protected Map<String, Object> properties = new HashMap<String, Object>();
@@ -34,19 +35,21 @@ public abstract class TinkerElement implements Element, Serializable {
         return this.properties.get(key);
     }
 
-    public void setProperty(final String key, final Object value) {
+    @SuppressWarnings("unchecked")
+	public void setProperty(final String key, final Object value) {
         if (key.equals(StringFactory.ID) || (key.equals(StringFactory.LABEL) && this instanceof Edge))
             throw new RuntimeException(key + StringFactory.PROPERTY_EXCEPTION_MESSAGE);
 
         Object oldValue = this.properties.put(key, value);
-        for (TinkerAutomaticIndex index : this.graph.getAutoIndices()) {
+        for (@SuppressWarnings("rawtypes") TinkerAutomaticIndex index : this.graph.getAutoIndices()) {
             index.autoUpdate(key, value, oldValue, this);
         }
     }
 
-    public Object removeProperty(final String key) {
+    @SuppressWarnings("unchecked")
+	public Object removeProperty(final String key) {
         Object oldValue = this.properties.remove(key);
-        for (TinkerAutomaticIndex index : this.graph.getAutoIndices()) {
+        for (@SuppressWarnings("rawtypes") TinkerAutomaticIndex index : this.graph.getAutoIndices()) {
             index.autoRemove(key, oldValue, this);
         }
         return oldValue;

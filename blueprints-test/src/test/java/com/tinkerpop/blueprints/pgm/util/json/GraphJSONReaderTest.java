@@ -18,7 +18,8 @@ import java.util.Map;
 
 public class GraphJSONReaderTest {
 
-    @Test
+    @SuppressWarnings("rawtypes")
+	@Test
     public void inputGraphWithTypes() throws IOException {
         TinkerGraph graph = new TinkerGraph();
 
@@ -69,7 +70,8 @@ public class GraphJSONReaderTest {
 
     }
 
-    @Test
+    @SuppressWarnings("rawtypes")
+	@Test
     public void inputGraphNoTypes() throws IOException {
         TinkerGraph graph = new TinkerGraph();
 
@@ -165,7 +167,8 @@ public class GraphJSONReaderTest {
 
     }
 
-    private int getIterableCount(Iterable elements) {
+    @SuppressWarnings("rawtypes")
+	private int getIterableCount(Iterable elements) {
         int counter = 0;
 
         Iterator iterator = elements.iterator();

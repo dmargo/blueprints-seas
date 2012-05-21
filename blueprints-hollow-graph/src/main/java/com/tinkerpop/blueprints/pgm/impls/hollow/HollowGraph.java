@@ -142,6 +142,16 @@ public class HollowGraph implements Graph {
     	return "Hollowgraph";
     }
 
+	@Override
+	public Edge getRandomEdge() {
+		return new HollowEdge(this, new Long(rand.nextLong() % edgeCount));
+	}
+
+	@Override
+	public Vertex getRandomVertex() {
+		return new HollowVertex(this, new Long(rand.nextLong() % vertexCount));
+	}
+
     /* TRANSACTIONAL GRAPH INTERFACE
 
     public void setTransactionMode(final Mode mode) {

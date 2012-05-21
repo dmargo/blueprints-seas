@@ -39,7 +39,8 @@ public class Neo4jVertexSequence<T extends Vertex> implements CloseableSequence<
         return this;
     }
 
-    public void close() {
+    @SuppressWarnings("rawtypes")
+	public void close() {
         if (this.nodes instanceof IndexHits) {
             ((IndexHits) this.nodes).close();
         }

@@ -24,7 +24,8 @@ public class Neo4jVertex extends Neo4jElement implements Vertex {
 
     }
 
-    public Iterable<Edge> getInEdges(final String... labels) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public Iterable<Edge> getInEdges(final String... labels) {
         if (labels.length == 0)
             return new Neo4jEdgeSequence(((Node) this.rawElement).getRelationships(Direction.INCOMING), this.graph);
         else if (labels.length == 1) {
@@ -38,7 +39,8 @@ public class Neo4jVertex extends Neo4jElement implements Vertex {
         }
     }
 
-    public Iterable<Edge> getOutEdges(final String... labels) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public Iterable<Edge> getOutEdges(final String... labels) {
         if (labels.length == 0)
             return new Neo4jEdgeSequence(((Node) this.rawElement).getRelationships(Direction.OUTGOING), this.graph);
         else if (labels.length == 1) {

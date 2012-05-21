@@ -96,6 +96,10 @@ public class DupEdge extends DupElement implements Edge {
     	this.in = in;
     }
     
+    public static DupEdge getRandomEdge(final DupGraph graph) throws DatabaseException {
+    	throw new RuntimeException("Not implemented.");
+    }
+
     protected void remove() throws DatabaseException{
     	// Remove property records.
     	DupEdgeKey ekey = new DupEdgeKey(this.out, this.label, this.in);

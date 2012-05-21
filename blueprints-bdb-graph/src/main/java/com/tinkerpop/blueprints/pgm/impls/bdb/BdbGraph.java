@@ -5,6 +5,7 @@ import com.sleepycat.bind.serial.StoredClassCatalog;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
 import com.sleepycat.db.DatabaseEntry;
+import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.DatabaseType;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.EnvironmentConfig;
@@ -38,6 +39,7 @@ public class BdbGraph implements Graph {
     protected SecondaryDatabase vertexPropertyDb;
     protected SecondaryDatabase edgePropertyDb;
     
+    // XXX This introduces major concurrency problems - need thread-local storage
     final public DatabaseEntry key = new DatabaseEntry();
     final public DatabaseEntry pKey = new DatabaseEntry();
     final public DatabaseEntry data = new DatabaseEntry();
@@ -148,6 +150,15 @@ public class BdbGraph implements Graph {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
+    
+    public Vertex getRandomVertex() {
+    	try {
+    		return BdbVertex.getRandomVertex(this);
+    	}
+    	catch (DatabaseException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
 
     public Edge addEdge(final Object id, final Vertex outVertex, final Vertex inVertex, final String label) {    	
         try {
@@ -193,6 +204,15 @@ public class BdbGraph implements Graph {
             //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+    
+    public Edge getRandomEdge() {
+    	try {
+    		return BdbEdge.getRandomEdge(this);
+    	}
+    	catch (DatabaseException e) {
+    		throw new RuntimeException(e);
+    	}
     }
 
     public void clear() {

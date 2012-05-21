@@ -22,7 +22,8 @@ public class AutomaticIndexHelper {
      * @param index   automatic index to add the element to
      * @param element element to be added
      */
-    public static void addElement(final AutomaticIndex index, final Element element) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public static void addElement(final AutomaticIndex index, final Element element) {
         final Set<String> indexKeys = index.getAutoIndexKeys();
         if (indexKeys == null || indexKeys.contains(AutomaticIndex.LABEL)) {
             if (element instanceof Edge)
@@ -41,7 +42,8 @@ public class AutomaticIndexHelper {
      * @param graph   the indexable graph maintaining the element
      * @param element element to be indexed in all automatic indices
      */
-    public static void addElement(final IndexableGraph graph, final Element element) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public static void addElement(final IndexableGraph graph, final Element element) {
         for (final Index index : graph.getIndices()) {
             if (index instanceof AutomaticIndex) {
                 if (index.getIndexClass().isAssignableFrom(element.getClass())) {
@@ -57,7 +59,8 @@ public class AutomaticIndexHelper {
      * @param index   automatic index to remove the element from
      * @param element element to be removed
      */
-    public static void removeElement(final AutomaticIndex index, final Element element) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void removeElement(final AutomaticIndex index, final Element element) {
         final Set<String> indexKeys = index.getAutoIndexKeys();
         if (indexKeys == null || indexKeys.contains(AutomaticIndex.LABEL)) {
             if (element instanceof Edge)
@@ -76,7 +79,8 @@ public class AutomaticIndexHelper {
      * @param graph   the indexable graph maintaining the element
      * @param element element to be unidexed in all automatic indices
      */
-    public static void removeElement(final IndexableGraph graph, final Element element) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void removeElement(final IndexableGraph graph, final Element element) {
         for (final Index index : graph.getIndices()) {
             if (index instanceof AutomaticIndex) {
                 if (index.getIndexClass().isAssignableFrom(element.getClass())) {

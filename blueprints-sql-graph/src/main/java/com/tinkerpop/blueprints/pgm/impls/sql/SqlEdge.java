@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.sql.*;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -96,7 +97,36 @@ public class SqlEdge extends SqlElement implements Edge {
     	this.inId = inId;
     	this.label = label;
     }
+    
+    public static SqlEdge getRandomEdge(final SqlGraph graph) throws SQLException {
+    	
+		ResultSet rs = graph.getMaxEdgeIdStatement.executeQuery();
+		rs.next();
+		long max = rs.getLong(1);
+		rs.close();
+    	
+    	// XXX Might fail if the last edge has been removed
+		
+		graph.getEdgeAfterStatement.setLong(1, (long) (Math.random() * max));
+		rs = graph.getEdgeAfterStatement.executeQuery();
+		if (!rs.next()) {
+			rs.close();
+			graph.getEdgeAfterStatement.setLong(1, 0);
+			rs = graph.getEdgeAfterStatement.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				throw new NoSuchElementException();
+			}
+		}
+		long id = rs.getLong(1);
+		long outId = rs.getLong(2);
+		long inId = rs.getLong(3);
+		String label = rs.getString(4);
+		rs.close();
 
+		return new SqlEdge(graph, id, outId, inId, label);
+    }
+    
     protected void remove() throws SQLException {
     	this.graph.removeEdgePropertiesStatement.setLong(1, this.eid);
     	this.graph.removeEdgePropertiesStatement.executeUpdate();

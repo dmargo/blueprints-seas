@@ -36,7 +36,8 @@ public class EventIndex<T extends Element> implements Index<T> {
         this.rawIndex.put(key, value, element);
     }
 
-    public CloseableSequence<T> get(final String key, final Object value) {
+    @SuppressWarnings("unchecked")
+	public CloseableSequence<T> get(final String key, final Object value) {
         if (Vertex.class.isAssignableFrom(this.getIndexClass())) {
             return (CloseableSequence<T>) new EventVertexSequence((Iterator<Vertex>) this.rawIndex.get(key, value).iterator(), this.graphChangedListeners);
         } else {

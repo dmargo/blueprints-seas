@@ -78,7 +78,8 @@ public class ElementHelper {
      * @param classCast the class to typecast to
      * @param elements  the elements to have their property typecasted
      */
-    public static void typecastProperty(final String key, final Class classCast, final Iterable<Element> elements) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public static void typecastProperty(final String key, final Class classCast, final Iterable<Element> elements) {
         for (final Element element : elements) {
             final Object value = element.removeProperty(key);
             if (null != value) {

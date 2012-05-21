@@ -196,7 +196,8 @@ public class GraphTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testConnectivityPatterns() {
+    @SuppressWarnings("unused")
+	public void testConnectivityPatterns() {
         Graph graph = graphTest.getGraphInstance();
         List<String> ids = generateIds(4);
 

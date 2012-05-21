@@ -32,7 +32,8 @@ public abstract class Neo4jElement implements Element {
             return null;
     }
 
-    public void setProperty(final String key, final Object value) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public void setProperty(final String key, final Object value) {
         if (key.equals(StringFactory.ID) || (key.equals(StringFactory.LABEL) && this instanceof Edge))
             throw new RuntimeException(key + StringFactory.PROPERTY_EXCEPTION_MESSAGE);
 
@@ -55,7 +56,8 @@ public abstract class Neo4jElement implements Element {
         }
     }
 
-    public Object removeProperty(final String key) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public Object removeProperty(final String key) {
         try {
             this.graph.autoStartTransaction();
             Object oldValue = this.rawElement.removeProperty(key);

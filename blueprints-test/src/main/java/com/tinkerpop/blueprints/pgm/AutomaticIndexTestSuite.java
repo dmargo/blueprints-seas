@@ -22,7 +22,8 @@ public class AutomaticIndexTestSuite extends TestSuite {
         super(graphTest);
     }
 
-    public void testAutoIndexKeyManagement() {
+    @SuppressWarnings("rawtypes")
+	public void testAutoIndexKeyManagement() {
         IndexableGraph graph = (IndexableGraph) graphTest.getGraphInstance();
         if (graphTest.supportsVertexIndex && !graphTest.isRDFModel) {
             Set<String> keys = new HashSet<String>();
@@ -42,7 +43,8 @@ public class AutomaticIndexTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testAutoIndexPutGetRemoveVertex() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testAutoIndexPutGetRemoveVertex() {
         if (graphTest.supportsVertexIndex && !graphTest.isRDFModel) {
             IndexableGraph graph = (IndexableGraph) graphTest.getGraphInstance();
             Set<Vertex> vertices = new HashSet<Vertex>();
@@ -288,7 +290,8 @@ public class AutomaticIndexTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testAutomaticIndexKeysPersistent() {
+    @SuppressWarnings("rawtypes")
+	public void testAutomaticIndexKeysPersistent() {
         if (graphTest.isPersistent && graphTest.supportsVertexIndex && !graphTest.isRDFModel) {
             IndexableGraph graph = (IndexableGraph) graphTest.getGraphInstance();
             graph.dropIndex(Index.EDGES);
@@ -402,7 +405,8 @@ public class AutomaticIndexTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testIndexCount() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testIndexCount() {
         if (graphTest.supportsVertexIndex && !graphTest.isRDFModel) {
             IndexableGraph graph = (IndexableGraph) graphTest.getGraphInstance();
             Set<String> keys = new HashSet<String>();

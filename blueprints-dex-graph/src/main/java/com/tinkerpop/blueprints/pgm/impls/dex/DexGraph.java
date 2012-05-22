@@ -15,6 +15,7 @@ import edu.upc.dama.dex.core.Objects;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -31,6 +32,11 @@ import java.util.Set;
  * @author <a href="http://www.sparsity-technologies.com">Sparsity Technologies</a>
  */
 public class DexGraph implements IndexableGraph {
+	
+	/**
+	 * The step in which DEX paritions its ID space
+	 */
+	public static final long ID_STEP = 1024;
 
     /**
      * Default Vertex label. Just used when invoked addVertex with a null parameter.
@@ -206,14 +212,36 @@ public class DexGraph implements IndexableGraph {
     @Override
     public Vertex getRandomVertex() {
     	
-    	// XXX Slow
+    	long nodes = rawGraph.nodes();
+    	long edges = rawGraph.edges();
     	
-    	long item = (long)(Math.random() * rawGraph.nodes());
-    	long i = 0;
-    	for (Vertex v : getVertices()) {
-    		if (i++ == item) return v;
+    	if (nodes <= 0) throw new NoSuchElementException();
+    	
+    	
+    	// Get the minimum and the maximum Id
+    	
+    	long nodes_up = (nodes / ID_STEP) * ID_STEP;
+    	long edges_up = (edges / ID_STEP) * ID_STEP;
+    	if (nodes_up != nodes) nodes_up += ID_STEP;
+    	if (edges_up != edges) edges_up += ID_STEP;
+    	
+    	long minId = ID_STEP;
+    	long maxId = minId + Math.max(nodes_up + edges, nodes + edges_up);
+    	
+    	
+    	// Pick a random item
+    	
+    	while (true) {
+    		long item = minId + (long)(Math.random() * (maxId - minId));
+    		try {
+    			if (rawGraph.isTypeNode(rawGraph.getType(item))) {
+    				return new DexVertex(this, item);
+    			}
+    		}
+    		catch (IllegalArgumentException e) {
+    			continue;
+    		}
     	}
-    	throw new InternalError();
     }
 
     /*
@@ -294,14 +322,36 @@ public class DexGraph implements IndexableGraph {
     @Override
     public Edge getRandomEdge() {
     	
-    	// XXX Slow
+    	long nodes = rawGraph.nodes();
+    	long edges = rawGraph.edges();
     	
-    	long item = (long)(Math.random() * rawGraph.edges());
-    	long i = 0;
-    	for (Edge e : getEdges()) {
-    		if (i++ == item) return e;
+    	if (edges <= 0) throw new NoSuchElementException();
+    	
+    	
+    	// Get the minimum and the maximum Id
+    	
+    	long nodes_up = (nodes / ID_STEP) * ID_STEP;
+    	long edges_up = (edges / ID_STEP) * ID_STEP;
+    	if (nodes_up != nodes) nodes_up += ID_STEP;
+    	if (edges_up != edges) edges_up += ID_STEP;
+    	
+    	long minId = ID_STEP;
+    	long maxId = minId + Math.max(nodes_up + edges, nodes + edges_up);
+    	
+    	
+    	// Pick a random item
+    	
+    	while (true) {
+    		long item = minId + (long)(Math.random() * (maxId - minId));
+    		try {
+    			if (rawGraph.isTypeEdge(rawGraph.getType(item))) {
+    				return new DexEdge(this, item);
+    			}
+    		}
+    		catch (IllegalArgumentException e) {
+    			continue;
+    		}
     	}
-    	throw new InternalError();
     }
 
     /*

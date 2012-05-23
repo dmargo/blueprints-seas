@@ -39,7 +39,8 @@ public class StringFactory {
         return graph.getClass().getSimpleName().toLowerCase() + L_BRACKET + internalString + R_BRACKET;
     }
 
-    public static String indexString(final Index index) {
+    @SuppressWarnings("rawtypes")
+	public static String indexString(final Index index) {
         String returnString = index.getIndexType() + L_BRACKET + index.getIndexName() + COLON + index.getIndexClass().getSimpleName() + R_BRACKET;
         if (index instanceof AutomaticIndex) {
             returnString = returnString + "[autoIndexKeys:" + ((AutomaticIndex) index).getAutoIndexKeys() + R_BRACKET;

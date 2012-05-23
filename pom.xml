@@ -44,7 +44,7 @@
     <modules>
         <module>blueprints-core</module>
         <module>blueprints-bdb-graph</module>
-        <module>blueprints-dex-graph</module>
+        <!-- <module>blueprints-dex-graph</module> -->
         <module>blueprints-dup-graph</module>
         <module>blueprints-graph-jung</module>
         <module>blueprints-graph-sail</module>

@@ -19,7 +19,8 @@ public class IndexableGraphTestSuite extends TestSuite {
         super(graphTest);
     }
 
-    public void testNoManualIndicesOnConstruction() {
+    @SuppressWarnings("rawtypes")
+	public void testNoManualIndicesOnConstruction() {
         IndexableGraph graph = (IndexableGraph) graphTest.getGraphInstance();
         int count = 0;
         this.stopWatch();
@@ -51,7 +52,8 @@ public class IndexableGraphTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testCreateDropIndices() {
+    @SuppressWarnings("rawtypes")
+	public void testCreateDropIndices() {
         IndexableGraph graph = (IndexableGraph) graphTest.getGraphInstance();
         int count = 0;
         this.stopWatch();
@@ -219,7 +221,8 @@ public class IndexableGraphTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testIndexDropPersistence() {
+    @SuppressWarnings("rawtypes")
+	public void testIndexDropPersistence() {
         if (graphTest.isPersistent) {
             IndexableGraph graph = (IndexableGraph) this.graphTest.getGraphInstance();
             Set<String> indexNames = new HashSet<String>();
@@ -242,7 +245,8 @@ public class IndexableGraphTestSuite extends TestSuite {
         }
     }
 
-    public void testExceptionOnIndexOverwrite() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testExceptionOnIndexOverwrite() {
         int loop = 1;
         if (graphTest.isPersistent)
             loop = 5;
@@ -349,7 +353,8 @@ public class IndexableGraphTestSuite extends TestSuite {
 
     }
 
-    public void testIndicesPersist() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testIndicesPersist() {
         if (graphTest.isPersistent) {
             IndexableGraph graph = (IndexableGraph) this.graphTest.getGraphInstance();
             Vertex a = graph.addVertex(null);

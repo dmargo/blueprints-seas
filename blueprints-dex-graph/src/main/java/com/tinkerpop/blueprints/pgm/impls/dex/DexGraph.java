@@ -14,7 +14,7 @@ import edu.upc.dama.dex.core.Objects;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -31,6 +31,11 @@ import java.util.Set;
  * @author <a href="http://www.sparsity-technologies.com">Sparsity Technologies</a>
  */
 public class DexGraph implements IndexableGraph {
+	
+	/**
+	 * The step in which DEX paritions its ID space
+	 */
+	public static final long ID_STEP = 1024;
 
     /**
      * Default Vertex label. Just used when invoked addVertex with a null parameter.
@@ -202,6 +207,46 @@ public class DexGraph implements IndexableGraph {
                 Vertex.class);
         return ret;
     }
+    
+    @Override
+    public long countVertices() {
+    	return rawGraph.nodes();
+    }
+    
+    @Override
+    public Vertex getRandomVertex() {
+    	
+    	long nodes = rawGraph.nodes();
+    	long edges = rawGraph.edges();
+    	
+    	if (nodes <= 0) throw new NoSuchElementException();
+    	
+    	
+    	// Get the minimum and the maximum Id
+    	
+    	long nodes_up = (nodes / ID_STEP) * ID_STEP;
+    	long edges_up = (edges / ID_STEP) * ID_STEP;
+    	if (nodes_up != nodes) nodes_up += ID_STEP;
+    	if (edges_up != edges) edges_up += ID_STEP;
+    	
+    	long minId = ID_STEP;
+    	long maxId = minId + Math.max(nodes_up + edges, nodes + edges_up);
+    	
+    	
+    	// Pick a random item
+    	
+    	while (true) {
+    		long item = minId + (long)(Math.random() * (maxId - minId));
+    		try {
+    			if (rawGraph.isTypeNode(rawGraph.getType(item))) {
+    				return new DexVertex(this, item);
+    			}
+    		}
+    		catch (IllegalArgumentException e) {
+    			continue;
+    		}
+    	}
+    }
 
     /*
       * (non-Javadoc)
@@ -276,6 +321,46 @@ public class DexGraph implements IndexableGraph {
             objs.close();
         }
         return new DexIterable<Edge>(this, result, Edge.class);
+    }
+    
+    @Override
+    public long countEdges() {
+    	return rawGraph.edges();
+    }
+    
+    @Override
+    public Edge getRandomEdge() {
+    	
+    	long nodes = rawGraph.nodes();
+    	long edges = rawGraph.edges();
+    	
+    	if (edges <= 0) throw new NoSuchElementException();
+    	
+    	
+    	// Get the minimum and the maximum Id
+    	
+    	long nodes_up = (nodes / ID_STEP) * ID_STEP;
+    	long edges_up = (edges / ID_STEP) * ID_STEP;
+    	if (nodes_up != nodes) nodes_up += ID_STEP;
+    	if (edges_up != edges) edges_up += ID_STEP;
+    	
+    	long minId = ID_STEP;
+    	long maxId = minId + Math.max(nodes_up + edges, nodes + edges_up);
+    	
+    	
+    	// Pick a random item
+    	
+    	while (true) {
+    		long item = minId + (long)(Math.random() * (maxId - minId));
+    		try {
+    			if (rawGraph.isTypeEdge(rawGraph.getType(item))) {
+    				return new DexEdge(this, item);
+    			}
+    		}
+    		catch (IllegalArgumentException e) {
+    			continue;
+    		}
+    	}
     }
 
     /*
@@ -367,7 +452,8 @@ public class DexGraph implements IndexableGraph {
       * com.tinkerpop.blueprints.pgm.IndexableGraph#getIndex(java.lang.String,
       * java.lang.Class)
       */
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public <T extends Element> Index<T> getIndex(final String indexName, final Class<T> indexClass) {
         if (indexName.compareTo(Index.VERTICES) == 0 || indexName.compareTo(Index.EDGES) == 0)
             return null;

@@ -24,7 +24,8 @@ public class MultiIterable<S> implements Iterable<S> {
         }
     }
 
-    protected class MultiIterator<S> implements Iterator<S> {
+    @SuppressWarnings("hiding")
+	protected class MultiIterator<S> implements Iterator<S> {
 
         private final List<Iterator<S>> iterators = new ArrayList<Iterator<S>>();
         private int current = 0;

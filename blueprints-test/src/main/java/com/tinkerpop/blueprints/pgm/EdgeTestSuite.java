@@ -2,7 +2,6 @@ package com.tinkerpop.blueprints.pgm;
 
 import com.tinkerpop.blueprints.BaseTest;
 import com.tinkerpop.blueprints.pgm.impls.GraphTest;
-import junit.framework.Assert;
 
 import java.util.HashSet;
 import java.util.List;
@@ -391,7 +390,8 @@ public class EdgeTestSuite extends TestSuite {
         graph.shutdown();
     }
 
-    public void testRemoveSelfLoops() {
+    @SuppressWarnings("unused")
+	public void testRemoveSelfLoops() {
         Graph graph = graphTest.getGraphInstance();
         if (graphTest.allowsSelfLoops) {
             List<String> ids = generateIds(3);

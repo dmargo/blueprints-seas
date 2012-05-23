@@ -1,6 +1,7 @@
 package com.tinkerpop.blueprints.pgm.impls.sql;
 
 import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 import com.tinkerpop.blueprints.pgm.impls.sql.util.SqlEdgeSequence;
@@ -10,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.sql.*;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;;
 
 /**
@@ -52,6 +54,30 @@ public class SqlVertex extends SqlElement implements Vertex {
     public SqlVertex(final SqlGraph graph, final long vid) {
     	this.graph = graph;
     	this.vid = vid;
+    }
+    
+    public static SqlVertex getRandomVertex(final SqlGraph graph) throws SQLException {
+    	
+		ResultSet rs = graph.getMaxVertexIdStatement.executeQuery();
+		rs.next();
+		long max = rs.getLong(1);
+		rs.close();
+
+		graph.getVertexAfterStatement.setLong(1, (long) (Math.random() * max));
+		rs = graph.getVertexAfterStatement.executeQuery();
+		if (!rs.next()) {
+			rs.close();
+			graph.getVertexAfterStatement.setLong(1, 0);
+			rs = graph.getVertexAfterStatement.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				throw new NoSuchElementException();
+			}
+		}
+		long id = rs.getLong(1);
+		rs.close();
+
+		return new SqlVertex(graph, id);
     }
 
     protected void remove() throws SQLException {
@@ -142,19 +168,19 @@ public class SqlVertex extends SqlElement implements Vertex {
         	ObjectOutputStream oos = new ObjectOutputStream(baos);
         	oos.writeObject(value);
         	
-            //graph.autoStartTransaction();
+            graph.autoStartTransaction();
 
         	this.graph.setVertexPropertyStatement.setLong(1, this.vid);
         	this.graph.setVertexPropertyStatement.setString(2, propertyKey);
         	this.graph.setVertexPropertyStatement.setBytes(3, baos.toByteArray());
         	this.graph.setVertexPropertyStatement.executeUpdate();
     		        	
-        	//graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -163,7 +189,7 @@ public class SqlVertex extends SqlElement implements Vertex {
     	Object result = null;
     	
         try {
-            //graph.autoStartTransaction();
+            graph.autoStartTransaction();
         	
         	result = this.getProperty(propertyKey);
         	
@@ -171,12 +197,12 @@ public class SqlVertex extends SqlElement implements Vertex {
         	this.graph.removeVertexPropertyStatement.setString(2, propertyKey);
         	this.graph.removeVertexPropertyStatement.executeUpdate();
         	
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            graph.autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
         

@@ -16,7 +16,8 @@ public class Neo4jEdge extends Neo4jElement implements Edge {
         this(relationship, graph, false);
     }
 
-    protected Neo4jEdge(final Relationship relationship, final Neo4jGraph graph, boolean isNew) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	protected Neo4jEdge(final Relationship relationship, final Neo4jGraph graph, boolean isNew) {
         super(graph);
         this.rawElement = relationship;
         if (isNew) {

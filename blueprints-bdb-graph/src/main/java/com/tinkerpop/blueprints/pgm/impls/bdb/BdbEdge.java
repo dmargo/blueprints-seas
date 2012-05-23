@@ -81,7 +81,11 @@ public class BdbEdge extends BdbElement implements Edge {
         this.outId = primaryKey.id1;
         this.inId = primaryKey.id2;
         this.label = primaryKey.label;
-    }    
+    }
+    
+    public static BdbEdge getRandomEdge(final BdbGraph graph) throws DatabaseException {
+    	throw new RuntimeException("Not implemented.");
+    }
 
     protected void remove() throws DatabaseException {
     	// Remove property records.

@@ -10,10 +10,28 @@ import java.sql.*;
  *
  * @author Daniel Margo (http://www.eecs.harvard.edu/~dmargo)
  */
-public class SqlGraph implements Graph {
+public class SqlGraph implements TransactionalGraph {
 	private String addr = null;
 	public Connection connection = null;
-
+	
+	// XXX The prepared statements need to be moved to thread-local storage or pools
+	
+    private final ThreadLocal<Boolean> tx = new ThreadLocal<Boolean>() {
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
+    private final ThreadLocal<Integer> txBuffer = new ThreadLocal<Integer>() {
+        protected Integer initialValue() {
+            return 1;
+        }
+    };
+    private final ThreadLocal<Integer> txCounter = new ThreadLocal<Integer>() {
+        protected Integer initialValue() {
+            return 0;
+        }
+    };
+    
     /**
      * Creates a new instance of a SqlGraph at directory.
      *
@@ -25,7 +43,7 @@ public class SqlGraph implements Graph {
     	try {
         	Class.forName("com.mysql.jdbc.Driver").newInstance();
             this.connection = DriverManager.getConnection(
-            		"jdbc:mysql:" + this.addr + "&autoDeserialize=true");        
+            		"jdbc:mysql:" + this.addr + "&autoDeserialize=true");     
             Statement statement = this.connection.createStatement();
             
             // First, some MySQL housekeeping.
@@ -134,18 +152,35 @@ public class SqlGraph implements Graph {
         			"END;");
         	statement.close();
         	
+        	
+        	//
         	// Create prepared statements.
+        	//
+        	
+        	// Vertices:
+        	
         	this.addVertexStatement = this.connection.prepareStatement(
         			"insert into vertex values(default)",
         			Statement.RETURN_GENERATED_KEYS);
-        	
+           	
         	this.getVertexStatement = this.connection.prepareStatement(
         			"select exists(select * from vertex where vid=?)");
+           	
+        	this.getMaxVertexIdStatement = this.connection.prepareStatement(
+        			"select max(vid) from vertex;");
+        	this.getVertexAfterStatement = this.connection.prepareStatement(
+        			"select vid from vertex where vid >= ? order by vid limit 1;");
+        	
+        	this.countVerticesStatement = this.connection.prepareStatement(
+        			"select count(*) from vertex;");
         	
         	this.removeVertexStatement = this.connection.prepareStatement(
         			"delete from vertex where vid=?");
         	this.removeVertexPropertiesStatement = this.connection.prepareStatement(
         			"delete from vertexproperty where vid=?");
+        	
+        	
+        	// Vertex properties:
         	
         	this.getVertexPropertyStatement = this.connection.prepareStatement(
         			"select value from vertexproperty where vid=? and pkey=?");
@@ -159,6 +194,9 @@ public class SqlGraph implements Graph {
         	this.removeVertexPropertyStatement = this.connection.prepareStatement(
     				"delete from vertexproperty where vid=? and pkey=?");
         	
+        	
+        	// Edges:
+        	
         	this.getEdgeVerticesStatement = this.connection.prepareStatement(
 					"select exists(select * from vertex where vid=?) " +
         			   "and exists(select * from vertex where vid=?)");
@@ -167,11 +205,22 @@ public class SqlGraph implements Graph {
         	
         	this.getEdgeStatement = this.connection.prepareStatement(
         			"select outid,inid,label from edge where eid=?");
+           	
+        	this.getMaxEdgeIdStatement = this.connection.prepareStatement(
+        			"select max(eid) from edge;");
+        	this.getEdgeAfterStatement = this.connection.prepareStatement(
+        			"select eid,outid,inid,label from edge where eid >= ? order by eid limit 1;");
         	
+        	this.countEdgesStatement = this.connection.prepareStatement(
+        			"select count(*) from edge;");
+
         	this.removeEdgeStatement = this.connection.prepareStatement(
         			"delete from edge where eid=?");
         	this.removeEdgePropertiesStatement = this.connection.prepareStatement(
         			"delete from edgeproperty where eid=?");
+        	
+        	
+        	// Edge properties:
         	
         	this.getEdgePropertyStatement = this.connection.prepareStatement(
         			"select value from edgeproperty where eid=? and pkey=?");
@@ -185,7 +234,12 @@ public class SqlGraph implements Graph {
         	this.removeEdgePropertyStatement = this.connection.prepareStatement(
         			"delete from edgeproperty where eid=? and pkey=?");
         			
-        } catch (RuntimeException e) {
+        	
+        	// Disable auto-commit.
+        	
+            connection.setAutoCommit(false);
+            
+       } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -196,15 +250,15 @@ public class SqlGraph implements Graph {
     protected PreparedStatement addVertexStatement;
     public Vertex addVertex(final Object id) {        
         try {
-            //autoStartTransaction();
+            autoStartTransaction();
             final Vertex vertex = new SqlVertex(this);
-            //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
             return vertex;
         } catch (RuntimeException e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }     
     }
@@ -224,6 +278,31 @@ public class SqlGraph implements Graph {
     public Iterable<Vertex> getVertices() {
         return new SqlVertexSequence(this);
     }
+    
+    protected PreparedStatement countVerticesStatement;
+    public long countVertices() {
+    	try {
+			ResultSet rs = countVerticesStatement.executeQuery();
+			rs.next();
+			long r = rs.getLong(1);
+			rs.close();
+			return r;
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
+    
+    protected PreparedStatement getMaxVertexIdStatement;
+    protected PreparedStatement getVertexAfterStatement;
+    public Vertex getRandomVertex() {
+    	try {
+    		return SqlVertex.getRandomVertex(this);
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
 
     protected PreparedStatement removeVertexStatement;
     protected PreparedStatement removeVertexPropertiesStatement;
@@ -232,14 +311,14 @@ public class SqlGraph implements Graph {
             return;
         
         try {
-            //autoStartTransaction();
+            autoStartTransaction();
             ((SqlVertex) vertex).remove();
-            //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -258,19 +337,19 @@ public class SqlGraph implements Graph {
 		final String label)
     {    	
         try {
-            //autoStartTransaction();
+            autoStartTransaction();
             final Edge edge = new SqlEdge(
         		this,
         		(SqlVertex) outVertex,
         		(SqlVertex) inVertex,
         		label);
-            //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
             return edge;
         } catch (RuntimeException e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -290,6 +369,31 @@ public class SqlGraph implements Graph {
     public Iterable<Edge> getEdges() {
         return new SqlEdgeSequence(this);
     }
+    
+    protected PreparedStatement countEdgesStatement;
+    public long countEdges() {
+    	try {
+			ResultSet rs = countEdgesStatement.executeQuery();
+			rs.next();
+			long r = rs.getLong(1);
+			rs.close();
+			return r;
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
+    
+    protected PreparedStatement getMaxEdgeIdStatement;
+    protected PreparedStatement getEdgeAfterStatement; 
+    public Edge getRandomEdge() {
+    	try {
+    		return SqlEdge.getRandomEdge(this);
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
 
     protected PreparedStatement removeEdgeStatement;
     protected PreparedStatement removeEdgePropertiesStatement;
@@ -298,14 +402,14 @@ public class SqlGraph implements Graph {
             return;
         
         try {
-            //autoStartTransaction();
+            autoStartTransaction();
             ((SqlEdge) edge).remove();
-            //autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw e;
         } catch (Exception e) {
-            //autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
+            autoStopTransaction(TransactionalGraph.Conclusion.FAILURE);
             throw new RuntimeException(e.getMessage(), e);
         }
     }
@@ -351,6 +455,14 @@ public class SqlGraph implements Graph {
     }
 
     public void shutdown() {
+        if (tx.get().booleanValue()) {
+            try {
+            	if (!connection.getAutoCommit()) connection.commit();
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+            tx.set(false);
+        }
         try {
     		this.connection.close();
         } catch (RuntimeException e) {
@@ -368,96 +480,91 @@ public class SqlGraph implements Graph {
     	}
     }
 
-    /* TRANSACTIONAL GRAPH INTERFACE
-
-    public void setTransactionMode(final Mode mode) {
-    	if (txn != null) {
-    		try {
-    			txn.commit();
-    		} catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            } finally {
-            	txn = null;
-            }
-    	}
-    	txnMode = mode;
-    }
-
-    public Mode getTransactionMode() {
-        return txnMode;
-    }
+    /* TRANSACTIONAL GRAPH INTERFACE */
 
     public void startTransaction() {
-        if (txnMode == Mode.AUTOMATIC)
-            throw new RuntimeException(TransactionalGraph.TURN_OFF_MESSAGE);
-        if (txn == null) {
-        	try {
-            	txn = dbEnv.beginTransaction(null, null);
-        	} catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
+        if (!tx.get().booleanValue()) {
+            txCounter.set(0);
+            tx.set(true);
         } else
             throw new RuntimeException(TransactionalGraph.NESTED_MESSAGE);
     }
 
     protected void autoStartTransaction() {
-        if (txnMode == Mode.AUTOMATIC) {
-            if (txn == null) {
-            	try {
-                	txn = dbEnv.beginTransaction(null, null);
-            	} catch (RuntimeException e) {
-                    throw e;
-                } catch (Exception e) {
-                    throw new RuntimeException(e.getMessage(), e);
-                }
-            } else
-                throw new RuntimeException(TransactionalGraph.NESTED_MESSAGE);
+        if (this.txBuffer.get() > 0) {
+            if (!tx.get().booleanValue()) {
+                tx.set(true);
+                txCounter.set(0);
+            }
         }
     }
 
     public void stopTransaction(final Conclusion conclusion) {
-        if (txnMode == Mode.AUTOMATIC)
-            throw new RuntimeException(TransactionalGraph.TURN_OFF_MESSAGE);
-        if (txn == null)
-        	throw new RuntimeException("BdbGraph: There is no active transaction to stop.");
-        try {
-        	if (conclusion == TransactionalGraph.Conclusion.SUCCESS)
-        		txn.commit();
-        	else
-        		txn.abort();
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        } finally {
-        	txn = null;
+        if (!tx.get().booleanValue()) {
+            txCounter.set(0);
+            return;
         }
+
+        try {
+            if (conclusion == Conclusion.SUCCESS)
+            	if (!connection.getAutoCommit()) connection.commit();
+            else
+            	if (!connection.getAutoCommit()) connection.rollback();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+
+        tx.set(false);
+        txCounter.set(0);
     }
 
     protected void autoStopTransaction(final Conclusion conclusion) {
-        if (txnMode == Mode.AUTOMATIC) {
-            if (txn == null)
-            	throw new RuntimeException("BdbGraph: There is no active transaction to stop.");
-            try {
-            	if (conclusion == TransactionalGraph.Conclusion.SUCCESS)
-            		txn.commit();
-            	else
-            		txn.abort();
-            } catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            } finally {
-            	txn = null;
+        if (this.txBuffer.get() > 0) {
+            txCounter.set(txCounter.get() + 1);
+            if (conclusion == Conclusion.FAILURE) {
+                try {
+                	if (!connection.getAutoCommit()) connection.rollback();
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+                tx.set(false);
+                txCounter.set(0);
+            } else if (this.txCounter.get() % this.txBuffer.get() == 0) {
+                try {
+                	if (!connection.getAutoCommit()) connection.commit();
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+                tx.set(false);
+                txCounter.set(0);
             }
         }
     }
-    
-    */
+
+	@Override
+	public int getCurrentBufferSize() {
+		return txCounter.get();
+	}
+
+	@Override
+	public int getMaxBufferSize() {
+		return txBuffer.get();
+	}
+
+	@Override
+	public void setMaxBufferSize(int size) {
+        if (tx.get().booleanValue()) {
+            try {
+				if (!connection.getAutoCommit()) connection.commit();
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+            tx.set(false);
+        }
+        this.txBuffer.set(size);
+        this.txCounter.set(0);
+	}
+
 
     /* INDEXABLE GRAPH INTERFACE
 

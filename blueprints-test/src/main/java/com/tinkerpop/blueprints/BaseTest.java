@@ -15,7 +15,8 @@ public abstract class BaseTest extends TestCase {
 
     double timer = -1.0d;
 
-    public static int count(final Iterator iterator) {
+    @SuppressWarnings("rawtypes")
+	public static int count(final Iterator iterator) {
         int counter = 0;
         while (iterator.hasNext()) {
             iterator.next();
@@ -24,11 +25,13 @@ public abstract class BaseTest extends TestCase {
         return counter;
     }
 
-    public static int count(final Iterable iterable) {
+    @SuppressWarnings("rawtypes")
+	public static int count(final Iterable iterable) {
         return count(iterable.iterator());
     }
 
-    public static int count(final CloseableSequence sequence) {
+    @SuppressWarnings("rawtypes")
+	public static int count(final CloseableSequence sequence) {
         return count(sequence.iterator());
     }
 

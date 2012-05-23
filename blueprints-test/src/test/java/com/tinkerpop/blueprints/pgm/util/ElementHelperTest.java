@@ -48,7 +48,8 @@ public class ElementHelperTest extends BaseTest {
         assertEquals(vertex.getPropertyKeys().size(), 0);
     }
 
-    public void testRemoveProperty() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testRemoveProperty() {
         Graph graph = TinkerGraphFactory.createTinkerGraph();
         ElementHelper.removeProperty("name", (Iterable) graph.getVertices());
         for (Vertex v : graph.getVertices()) {
@@ -56,7 +57,8 @@ public class ElementHelperTest extends BaseTest {
         }
     }
 
-    public void testRenameProperty() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testRenameProperty() {
         Graph graph = TinkerGraphFactory.createTinkerGraph();
         ElementHelper.renameProperty("name", "name2", (Iterable) graph.getVertices());
         for (Vertex v : graph.getVertices()) {
@@ -67,7 +69,8 @@ public class ElementHelperTest extends BaseTest {
         }
     }
 
-    public void testTypecastProperty() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public void testTypecastProperty() {
         Graph graph = TinkerGraphFactory.createTinkerGraph();
         for (Edge e : graph.getEdges()) {
             assertTrue(e.getProperty("weight") instanceof Float);
@@ -116,7 +119,8 @@ public class ElementHelperTest extends BaseTest {
         assertEquals(vertex.getProperty("name"), "marko");
     }
 
-    public void testSetProperties() {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public void testSetProperties() {
         Graph graph = new TinkerGraph();
         Vertex vertex = graph.addVertex(null);
         Map map = new HashMap();

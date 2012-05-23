@@ -16,7 +16,8 @@ import java.util.Set;
  */
 public class AutomaticIndexHelperTest extends BaseTest {
 
-    public void testAddRemoveElements() {
+    @SuppressWarnings("rawtypes")
+	public void testAddRemoveElements() {
         IndexableGraph graph = new TinkerGraph();
         graph.dropIndex(Index.VERTICES);
         graph.dropIndex(Index.EDGES);
@@ -46,7 +47,8 @@ public class AutomaticIndexHelperTest extends BaseTest {
         graph.shutdown();
     }
 
-    public void testReIndexElements() {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public void testReIndexElements() {
         IndexableGraph graph = new TinkerGraph();
         graph.dropIndex(Index.VERTICES);
         graph.dropIndex(Index.EDGES);

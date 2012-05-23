@@ -29,7 +29,8 @@ public class ReadOnlyIndex<T extends Element> implements Index<T> {
         throw new UnsupportedOperationException(ReadOnlyTokens.MUTATE_ERROR_MESSAGE);
     }
 
-    public CloseableSequence<T> get(final String key, final Object value) {
+    @SuppressWarnings("unchecked")
+	public CloseableSequence<T> get(final String key, final Object value) {
         if (Vertex.class.isAssignableFrom(this.getIndexClass())) {
             return (CloseableSequence<T>) new ReadOnlyVertexSequence((Iterator<Vertex>) this.rawIndex.get(key, value).iterator());
         } else {

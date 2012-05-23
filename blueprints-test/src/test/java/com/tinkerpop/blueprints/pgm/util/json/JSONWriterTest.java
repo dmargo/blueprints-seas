@@ -92,7 +92,8 @@ public class JSONWriterTest {
         Assert.assertTrue(json.optBoolean("keyBoolean"));
     }
 
-    @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	@Test
     public void createJSONObjectVertexMapPropertyNoKeysNoTypes() throws JSONException {
         Vertex v = this.graph.addVertex(1);
         Map map = new HashMap();
@@ -304,7 +305,8 @@ public class JSONWriterTest {
         Assert.assertEquals(2, catListAsJson.length());
     }
 
-    @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	@Test
     public void createJSONObjectCrazyPropertyNoKeysNoTypes() throws JSONException {
         Vertex v = this.graph.addVertex(1);
         List mix = new ArrayList();
@@ -661,7 +663,8 @@ public class JSONWriterTest {
     }
 
 
-    @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	@Test
     public void createJSONObjectVertexMapPropertiesNoKeysWithTypes() throws JSONException {
         Vertex v = this.graph.addVertex(1);
 
@@ -798,7 +801,8 @@ public class JSONWriterTest {
             this.name = name;
         }
 
-        public String getName() {
+        @SuppressWarnings("unused")
+		public String getName() {
             return this.name;
         }
 

@@ -209,7 +209,8 @@ public class GraphJSONReader {
         return propertyValue;
     }
 
-    private static List readProperties(final Iterator<JsonNode> listOfNodes, final boolean hasEmbeddedTypes) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private static List readProperties(final Iterator<JsonNode> listOfNodes, final boolean hasEmbeddedTypes) {
         List array = new ArrayList();
 
         while (listOfNodes.hasNext()) {

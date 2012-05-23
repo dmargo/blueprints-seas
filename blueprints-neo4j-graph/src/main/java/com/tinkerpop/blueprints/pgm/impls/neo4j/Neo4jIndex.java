@@ -37,7 +37,8 @@ public class Neo4jIndex<T extends Neo4jElement, S extends PropertyContainer> imp
         return Type.MANUAL;
     }
 
-    public Class<T> getIndexClass() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public Class<T> getIndexClass() {
         if (Vertex.class.isAssignableFrom(this.indexClass))
             return (Class) Vertex.class;
         else
@@ -48,7 +49,8 @@ public class Neo4jIndex<T extends Neo4jElement, S extends PropertyContainer> imp
         return this.indexName;
     }
 
-    public void put(final String key, final Object value, final T element) {
+    @SuppressWarnings({ "unchecked" })
+	public void put(final String key, final Object value, final T element) {
         try {
             this.graph.autoStartTransaction();
             this.rawIndex.add((S) element.getRawElement(), key, value);
@@ -62,6 +64,7 @@ public class Neo4jIndex<T extends Neo4jElement, S extends PropertyContainer> imp
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public CloseableSequence<T> get(final String key, final Object value) {
         final IndexHits<S> itty;
         if (value instanceof String && ((String) value).startsWith(Neo4jTokens.QUERY_HEADER)) {
@@ -79,6 +82,7 @@ public class Neo4jIndex<T extends Neo4jElement, S extends PropertyContainer> imp
         return this.rawIndex.get(key, value).size();
     }
 
+    @SuppressWarnings({ "unchecked" })
     public void remove(final String key, final Object value, final T element) {
         try {
             this.graph.autoStartTransaction();
@@ -93,14 +97,17 @@ public class Neo4jIndex<T extends Neo4jElement, S extends PropertyContainer> imp
         }
     }
 
+    @SuppressWarnings({ "unchecked" })
     protected void removeBasic(final String key, final Object value, final T element) {
         this.rawIndex.remove((S) element.getRawElement(), key, value);
     }
 
+    @SuppressWarnings({ "unchecked" })
     protected void putBasic(final String key, final Object value, final T element) {
         this.rawIndex.add((S) element.getRawElement(), key, value);
     }
 
+    @SuppressWarnings({ "unchecked" })
     private void generateIndex() {
         if (this.indexClass.isAssignableFrom(Neo4jVertex.class))
             this.rawIndex = (org.neo4j.graphdb.index.Index<S>) graph.getRawGraph().index().forNodes(this.indexName);

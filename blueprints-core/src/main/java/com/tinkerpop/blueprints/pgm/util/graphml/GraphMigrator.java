@@ -26,7 +26,8 @@ public class GraphMigrator {
 
         final PipedInputStream inPipe = new PipedInputStream() {
             // Default is 1024
-            protected static final int PIPE_SIZE = 1024;
+            @SuppressWarnings("unused")
+			protected static final int PIPE_SIZE = 1024;
         };
 
         final PipedOutputStream outPipe = new PipedOutputStream(inPipe) {

@@ -17,6 +17,7 @@ import com.tinkerpop.blueprints.pgm.impls.bdb.util.BdbVertexKeyCreator;
 import com.tinkerpop.blueprints.pgm.impls.bdb.util.BdbVertexPropertyKeyCreator;
 
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -81,7 +82,29 @@ public class BdbVertex extends BdbElement implements Vertex {
     public BdbVertex(final BdbGraph graph, final long id) {
     	this.graph = graph;
         this.id = id;
-    }  
+    }
+    
+    public static BdbVertex getRandomVertex(final BdbGraph graph) throws DatabaseException {
+    	
+    	// Note: This implementation assumes that the number of vertex deletions is negligible
+    	// as compared to the total number of nodes
+    	
+		// Get the last ID# in the graph.
+		SecondaryCursor cursor = graph.vertexDb.openSecondaryCursor(null, null);
+        OperationStatus status = cursor.getLast(graph.key, graph.data, null);
+        cursor.close();
+        if (status == OperationStatus.NOTFOUND) throw new NoSuchElementException();
+        Long lastId = LongBinding.entryToLong(graph.key);
+        
+        // Get a random element
+        cursor = graph.vertexDb.openSecondaryCursor(null, null);
+        LongBinding.longToEntry((long)(lastId.longValue() * Math.random()), graph.key);
+        status = cursor.getSearchKeyRange(graph.key, graph.pKey, graph.data, null);
+        cursor.close();
+        if (status == OperationStatus.NOTFOUND) throw new InternalError();
+        
+        return new BdbVertex(graph, (long) LongBinding.entryToLong(graph.key));
+    }
 
     protected void remove() throws DatabaseException {
     	// Remove linked edge records.

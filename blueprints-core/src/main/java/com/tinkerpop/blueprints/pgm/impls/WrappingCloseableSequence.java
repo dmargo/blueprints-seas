@@ -31,7 +31,8 @@ public class WrappingCloseableSequence<T> implements CloseableSequence<T> {
         return this;
     }
 
-    public void close() {
+    @SuppressWarnings("rawtypes")
+	public void close() {
         if (this.itty instanceof CloseableSequence) {
             ((CloseableSequence) itty).close();
         }

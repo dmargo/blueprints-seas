@@ -49,7 +49,8 @@ public class ReadOnlyIndexableGraph extends ReadOnlyGraph implements IndexableGr
             return new ReadOnlyAutomaticIndex<T>((AutomaticIndex<T>) index);
     }
 
-    public Iterable<Index<? extends Element>> getIndices() {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public Iterable<Index<? extends Element>> getIndices() {
         return new ReadOnlyIndexSequence(((IndexableGraph) this.rawGraph).getIndices().iterator());
     }
 

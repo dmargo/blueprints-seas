@@ -13,8 +13,7 @@ import edu.upc.dama.dex.core.DEX;
 import edu.upc.dama.dex.core.Objects;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.FileNotFoundException;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -112,7 +111,7 @@ public class DexGraph implements IndexableGraph {
             this.db = db;
             DEX.Config cfg = new DEX.Config();
             cfg.setCacheMaxSize(256);
-            //cfg.setLicense("Q2JAZ-4DQRV-F5MX2-S4YZV");
+            cfg.setLicense("X08BN-MKQ1W-C37MF-QSDMJ");
             dex = new DEX(cfg);
             //dex = new DEX();
             gpool = (create ? dex.create(db) : dex.open(db));

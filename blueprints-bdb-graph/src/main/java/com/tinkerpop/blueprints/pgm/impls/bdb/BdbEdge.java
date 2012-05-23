@@ -1,5 +1,6 @@
 package com.tinkerpop.blueprints.pgm.impls.bdb;
 
+import com.sleepycat.db.Cursor;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
@@ -84,7 +85,25 @@ public class BdbEdge extends BdbElement implements Edge {
     }
     
     public static BdbEdge getRandomEdge(final BdbGraph graph) throws DatabaseException {
-    	throw new RuntimeException("Not implemented.");
+        
+        // Get a random element
+    	
+    	OperationStatus status;
+    	BdbPrimaryKey k;
+    	
+    	do {
+	    	do {
+		    	Cursor cursor = graph.graphDb.openCursor(null, null);
+		    	BdbGraph.primaryKeyBinding.objectToEntry(BdbPrimaryKey.RANDOM, graph.key);
+		    	status = cursor.getSearchKeyRange(graph.key, graph.data, null);
+		        cursor.close();
+	    	}
+		    while (status == OperationStatus.NOTFOUND);
+	    	k = BdbGraph.primaryKeyBinding.entryToObject(graph.key);
+    	}
+    	while (k.type != BdbPrimaryKey.EDGE);
+    	
+        return new BdbEdge(graph, k);
     }
 
     protected void remove() throws DatabaseException {

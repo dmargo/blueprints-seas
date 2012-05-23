@@ -35,7 +35,7 @@ public class BdbGraph implements Graph {
     private StoredClassCatalog classCatalog;
     protected SerialBinding<Object> serialBinding;
          
-    protected Database graphDb;
+    public Database graphDb;
     public SecondaryDatabase vertexDb;
     public SecondaryDatabase outDb;
     protected SecondaryDatabase inDb;

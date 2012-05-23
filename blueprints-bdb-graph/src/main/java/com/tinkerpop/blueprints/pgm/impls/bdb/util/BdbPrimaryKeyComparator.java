@@ -10,6 +10,11 @@ public class BdbPrimaryKeyComparator implements Comparator<byte[]> {
     public int compare(byte[] o1, byte[] o2) {	
     	BdbPrimaryKey key1 = BdbGraph.primaryKeyBinding.entryToObject(new DatabaseEntry(o1));
         BdbPrimaryKey key2 = BdbGraph.primaryKeyBinding.entryToObject(new DatabaseEntry(o2));
+        
+        // Hack to enable us to get a random key from a btree
+        if (key1.type == BdbPrimaryKey.RANDOM_COMPARISON || key2.type == BdbPrimaryKey.RANDOM_COMPARISON) {
+        	return Math.random() < 0.5 ? -1 : 1;
+        }
 
         // Sort first on id1.
         if (key1.id1 < key2.id1)

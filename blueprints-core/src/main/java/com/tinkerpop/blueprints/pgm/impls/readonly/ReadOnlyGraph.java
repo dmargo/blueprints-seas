@@ -53,6 +53,10 @@ public class ReadOnlyGraph implements Graph {
     public Iterable<Edge> getEdges() {
         return new ReadOnlyEdgeSequence(this.rawGraph.getEdges().iterator());
     }
+    
+    public long countEdges() {
+    	return this.rawGraph.countEdges();
+    }
 
     public Edge getEdge(final Object id) {
         final Edge edge = this.rawGraph.getEdge(id);
@@ -72,6 +76,10 @@ public class ReadOnlyGraph implements Graph {
 
     public Iterable<Vertex> getVertices() {
         return new ReadOnlyVertexSequence(this.rawGraph.getVertices().iterator());
+    }
+    
+    public long countVertices() {
+    	return this.rawGraph.countVertices();
     }
 
     public Vertex getRandomVertex() {

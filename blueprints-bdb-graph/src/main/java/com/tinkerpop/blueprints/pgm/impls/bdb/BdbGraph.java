@@ -2,15 +2,18 @@ package com.tinkerpop.blueprints.pgm.impls.bdb;
 
 import com.sleepycat.bind.serial.SerialBinding;
 import com.sleepycat.bind.serial.StoredClassCatalog;
+import com.sleepycat.db.BtreeStats;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
+import com.sleepycat.db.DatabaseStats;
 import com.sleepycat.db.DatabaseType;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.EnvironmentConfig;
 import com.sleepycat.db.SecondaryConfig;
 import com.sleepycat.db.SecondaryDatabase;
+import com.sleepycat.db.StatsConfig;
 import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.impls.bdb.util.*;
 
@@ -31,7 +34,7 @@ public class BdbGraph implements Graph {
     private Database classDb;
     private StoredClassCatalog classCatalog;
     protected SerialBinding<Object> serialBinding;
-        
+         
     protected Database graphDb;
     public SecondaryDatabase vertexDb;
     public SecondaryDatabase outDb;
@@ -43,6 +46,7 @@ public class BdbGraph implements Graph {
     final public DatabaseEntry key = new DatabaseEntry();
     final public DatabaseEntry pKey = new DatabaseEntry();
     final public DatabaseEntry data = new DatabaseEntry();
+    
 
     /**
      * Creates a new instance of a BdbGraph at directory.
@@ -134,6 +138,18 @@ public class BdbGraph implements Graph {
         return new BdbVertexSequence(this);
     }
 
+    public long countVertices() {   
+    	// Note: The fast version of StatConfig does not give us the results
+    	// we need, so this is kind of slow
+    	DatabaseStats s;
+		try {
+			s = vertexDb.getStats(null, StatsConfig.DEFAULT);
+			return ((BtreeStats) s).getNumData();
+		} catch (DatabaseException e) {
+			throw new RuntimeException(e);
+		}
+    }
+
     public void removeVertex(final Vertex vertex) {
         if (vertex == null || vertex.getId() == null)
             return;
@@ -188,6 +204,18 @@ public class BdbGraph implements Graph {
 
     public Iterable<Edge> getEdges() {
         return new BdbEdgeSequence(this);
+    }
+
+    public long countEdges() {    	
+    	// Note: The fast version of StatConfig does not give us the results
+    	// we need, so this is kind of slow
+    	DatabaseStats s;
+		try {
+			s = outDb.getStats(null, StatsConfig.DEFAULT);
+	    	return ((BtreeStats) s).getNumData();
+		} catch (DatabaseException e) {
+			throw new RuntimeException(e);
+		}
     }
 
     public void removeEdge(final Edge edge) {

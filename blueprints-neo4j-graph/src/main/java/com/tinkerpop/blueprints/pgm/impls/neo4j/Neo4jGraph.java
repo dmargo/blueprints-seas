@@ -269,6 +269,10 @@ public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
         return new Neo4jVertexSequence(this.rawGraph.getAllNodes(), this);
     }
     
+    public long countVertices() {
+    	return nodeManager.getNumberOfIdsInUse(Node.class);
+    }
+    
     public Vertex getRandomVertex() {
     	// From: http://grepcode.com/file/repo1.maven.org/maven2/org.neo4j/neo4j-kernel/1.5.M02/org/neo4j/test/RandomNode.java/
     	// XXX This will loop forever if the graph does not contain any nodes
@@ -288,6 +292,10 @@ public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
 
     public Iterable<Edge> getEdges() {
         return new Neo4jGraphEdgeSequence(this.rawGraph.getAllNodes(), this);
+    }
+    
+    public long countEdges() {
+    	return nodeManager.getNumberOfIdsInUse(Relationship.class);
     }
     
     public Edge getRandomEdge() {

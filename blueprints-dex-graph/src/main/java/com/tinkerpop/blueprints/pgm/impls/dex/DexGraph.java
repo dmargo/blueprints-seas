@@ -210,6 +210,11 @@ public class DexGraph implements IndexableGraph {
     }
     
     @Override
+    public long countVertices() {
+    	return rawGraph.nodes();
+    }
+    
+    @Override
     public Vertex getRandomVertex() {
     	
     	long nodes = rawGraph.nodes();
@@ -317,6 +322,11 @@ public class DexGraph implements IndexableGraph {
             objs.close();
         }
         return new DexIterable<Edge>(this, result, Edge.class);
+    }
+    
+    @Override
+    public long countEdges() {
+    	return rawGraph.edges();
     }
     
     @Override

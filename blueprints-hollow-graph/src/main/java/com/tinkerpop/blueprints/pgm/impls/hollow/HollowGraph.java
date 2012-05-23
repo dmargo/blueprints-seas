@@ -152,6 +152,16 @@ public class HollowGraph implements Graph {
 		return new HollowVertex(this, new Long(rand.nextLong() % vertexCount));
 	}
 
+	@Override
+	public long countEdges() {
+		return 5000;
+	}
+
+	@Override
+	public long countVertices() {
+		return 1000;
+	}
+
     /* TRANSACTIONAL GRAPH INTERFACE
 
     public void setTransactionMode(final Mode mode) {

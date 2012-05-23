@@ -152,7 +152,13 @@ public class SqlGraph implements TransactionalGraph {
         			"END;");
         	statement.close();
         	
+        	
+        	//
         	// Create prepared statements.
+        	//
+        	
+        	// Vertices:
+        	
         	this.addVertexStatement = this.connection.prepareStatement(
         			"insert into vertex values(default)",
         			Statement.RETURN_GENERATED_KEYS);
@@ -165,10 +171,16 @@ public class SqlGraph implements TransactionalGraph {
         	this.getVertexAfterStatement = this.connection.prepareStatement(
         			"select vid from vertex where vid >= ? order by vid limit 1;");
         	
+        	this.countVerticesStatement = this.connection.prepareStatement(
+        			"select count(*) from vertex;");
+        	
         	this.removeVertexStatement = this.connection.prepareStatement(
         			"delete from vertex where vid=?");
         	this.removeVertexPropertiesStatement = this.connection.prepareStatement(
         			"delete from vertexproperty where vid=?");
+        	
+        	
+        	// Vertex properties:
         	
         	this.getVertexPropertyStatement = this.connection.prepareStatement(
         			"select value from vertexproperty where vid=? and pkey=?");
@@ -181,6 +193,9 @@ public class SqlGraph implements TransactionalGraph {
         	
         	this.removeVertexPropertyStatement = this.connection.prepareStatement(
     				"delete from vertexproperty where vid=? and pkey=?");
+        	
+        	
+        	// Edges:
         	
         	this.getEdgeVerticesStatement = this.connection.prepareStatement(
 					"select exists(select * from vertex where vid=?) " +
@@ -195,11 +210,17 @@ public class SqlGraph implements TransactionalGraph {
         			"select max(eid) from edge;");
         	this.getEdgeAfterStatement = this.connection.prepareStatement(
         			"select eid,outid,inid,label from edge where eid >= ? order by eid limit 1;");
+        	
+        	this.countEdgesStatement = this.connection.prepareStatement(
+        			"select count(*) from edge;");
 
         	this.removeEdgeStatement = this.connection.prepareStatement(
         			"delete from edge where eid=?");
         	this.removeEdgePropertiesStatement = this.connection.prepareStatement(
         			"delete from edgeproperty where eid=?");
+        	
+        	
+        	// Edge properties:
         	
         	this.getEdgePropertyStatement = this.connection.prepareStatement(
         			"select value from edgeproperty where eid=? and pkey=?");
@@ -213,7 +234,11 @@ public class SqlGraph implements TransactionalGraph {
         	this.removeEdgePropertyStatement = this.connection.prepareStatement(
         			"delete from edgeproperty where eid=? and pkey=?");
         			
+        	
+        	// Disable auto-commit.
+        	
             connection.setAutoCommit(false);
+            
        } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -252,6 +277,20 @@ public class SqlGraph implements TransactionalGraph {
 
     public Iterable<Vertex> getVertices() {
         return new SqlVertexSequence(this);
+    }
+    
+    protected PreparedStatement countVerticesStatement;
+    public long countVertices() {
+    	try {
+			ResultSet rs = countVerticesStatement.executeQuery();
+			rs.next();
+			long r = rs.getLong(1);
+			rs.close();
+			return r;
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
     }
     
     protected PreparedStatement getMaxVertexIdStatement;
@@ -329,6 +368,20 @@ public class SqlGraph implements TransactionalGraph {
 
     public Iterable<Edge> getEdges() {
         return new SqlEdgeSequence(this);
+    }
+    
+    protected PreparedStatement countEdgesStatement;
+    public long countEdges() {
+    	try {
+			ResultSet rs = countEdgesStatement.executeQuery();
+			rs.next();
+			long r = rs.getLong(1);
+			rs.close();
+			return r;
+    	}
+    	catch (SQLException e) {
+    		throw new RuntimeException(e);
+    	}
     }
     
     protected PreparedStatement getMaxEdgeIdStatement;

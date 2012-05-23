@@ -120,6 +120,10 @@ public class EventGraph implements Graph {
         return new EventVertexSequence(this.rawGraph.getVertices().iterator(), this.graphChangedListeners);
     }
     
+    public long countVertices() {
+    	return this.rawGraph.countVertices();
+    }
+    
     public Vertex getRandomVertex() {
     	final Vertex vertex = this.rawGraph.getRandomVertex();
         if (vertex == null) {
@@ -176,6 +180,10 @@ public class EventGraph implements Graph {
 
     public Iterable<Edge> getEdges() {
         return new EventEdgeSequence(this.rawGraph.getEdges().iterator(), this.graphChangedListeners);
+    }
+    
+    public long countEdges() {
+    	return this.rawGraph.countEdges();
     }
     
     public Edge getRandomEdge() {

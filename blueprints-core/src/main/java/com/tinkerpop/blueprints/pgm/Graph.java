@@ -47,6 +47,13 @@ public interface Graph {
     public Iterable<Vertex> getVertices();
     
     /**
+     * Count the number of vertices.
+     * 
+     * @return the number of vertices
+     */
+    public long countVertices();
+    
+    /**
      * Return a random vertex.
      * 
      * @return a random vertex
@@ -88,6 +95,13 @@ public interface Graph {
      * @return an iterable reference to all edges in the graph
      */
     public Iterable<Edge> getEdges();
+    
+    /**
+     * Count the number of edges.
+     * 
+     * @return the number of edges
+     */
+    public long countEdges();
     
     /**
      * Return a random edge.

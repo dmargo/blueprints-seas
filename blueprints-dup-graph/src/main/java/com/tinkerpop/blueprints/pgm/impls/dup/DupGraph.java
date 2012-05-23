@@ -1,12 +1,16 @@
 package com.tinkerpop.blueprints.pgm.impls.dup;
 
+import com.sleepycat.db.BtreeStats;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
+import com.sleepycat.db.DatabaseStats;
 import com.sleepycat.db.DatabaseType;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.EnvironmentConfig;
+import com.sleepycat.db.QueueStats;
+import com.sleepycat.db.StatsConfig;
 import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.impls.dup.util.*;
 
@@ -114,6 +118,18 @@ public class DupGraph implements Graph {
     	return new DupVertexSequence(this);
     }
 
+    public long countVertices() {    	
+    	// Note: The fast version of StatConfig does not give us the results
+    	// we need, so this is kind of slow
+    	DatabaseStats s;
+		try {
+			s = vertexDb.getStats(null, StatsConfig.DEFAULT);
+			return ((QueueStats) s).getNumData();
+		} catch (DatabaseException e) {
+			throw new RuntimeException(e);
+		}
+    }
+
     public void removeVertex(final Vertex vertex) {
         if (vertex == null || vertex.getId() == null)
             return;
@@ -176,6 +192,18 @@ public class DupGraph implements Graph {
 
     public Iterable<Edge> getEdges() {
     	return new DupEdgeSequence(this);
+    }
+
+    public long countEdges() {    	
+    	// Note: The fast version of StatConfig does not give us the results
+    	// we need, so this is kind of slow
+    	DatabaseStats s;
+		try {
+			s = outDb.getStats(null, StatsConfig.DEFAULT);
+	    	return ((BtreeStats) s).getNumData();
+		} catch (DatabaseException e) {
+			throw new RuntimeException(e);
+		}
     }
 
     public void removeEdge(final Edge edge) {

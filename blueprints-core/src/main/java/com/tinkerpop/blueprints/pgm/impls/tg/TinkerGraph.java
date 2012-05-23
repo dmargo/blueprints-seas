@@ -185,6 +185,14 @@ public class TinkerGraph implements IndexableGraph, Serializable {
         return new LinkedList<Edge>(edges.values());
     }
     
+    public long countVertices() {
+    	return vertices.size();
+    }
+    
+    public long countEdges() {
+    	return edges.size();
+    }
+    
     public Vertex getRandomVertex() {
     	if (vertices.isEmpty()) throw new NoSuchElementException();
     	Collection<Vertex> c = vertices.values();

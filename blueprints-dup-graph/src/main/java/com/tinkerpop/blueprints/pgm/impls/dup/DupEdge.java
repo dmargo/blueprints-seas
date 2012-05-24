@@ -13,6 +13,7 @@ import com.tinkerpop.blueprints.pgm.impls.dup.util.DupEdgeDataBinding;
 import com.tinkerpop.blueprints.pgm.impls.dup.util.DupEdgeKey;
 import com.tinkerpop.blueprints.pgm.impls.dup.util.DupEdgeKeyBinding;
 import com.tinkerpop.blueprints.pgm.impls.dup.util.DupPropertyData;
+import com.tinkerpop.blueprints.pgm.impls.dup.util.DupRecordNumberComparator;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -61,7 +62,19 @@ public class DupEdge extends DupElement implements Edge {
     	}
         
         this.graph = graph;
-        this.label = edata.label;
+        this.label = label;
+    }
+	
+    protected DupEdge(
+		final DupGraph graph,
+		final long outVertex,
+		final long inVertex,
+		final String label) throws DatabaseException
+    {
+    	this.out = outVertex;
+    	this.in = inVertex;        
+        this.graph = graph;
+        this.label = label;
     }
 
     protected DupEdge(final DupGraph graph, final Object id) throws DatabaseException {
@@ -97,7 +110,51 @@ public class DupEdge extends DupElement implements Edge {
     }
     
     public static DupEdge getRandomEdge(final DupGraph graph) throws DatabaseException {
-    	throw new RuntimeException("Not implemented.");
+    	
+    	// XXX This will loop forever if there are no edges
+        
+    	OperationStatus status;
+    	do {
+    		
+    		// Get a random out-vertex using a distribution that is a rough approximation of what we
+    		// had if weighted each out-vertex by its out-degree -- which is equivalent to picking
+    		// random edges using uniform distribution. The following code would choose a random leaf
+    		// page according to the aforementioned approximation to the given distribution, but it
+    		// will pick an out-vertex uniformly at random from the leaf page, so we still need to
+    		// account for this
+    		
+		   	Cursor cursor = graph.outDb.openCursor(null, null);
+		   	RecordNumberBinding.recordNumberToEntry(DupRecordNumberComparator.RANDOM, graph.key);
+		   	status = cursor.getSearchKeyRange(graph.key, graph.data, null);
+		   	if (status == OperationStatus.NOTFOUND) {
+		   		cursor.close();
+		   		continue;
+		   	}
+		
+		   	
+		   	// Now traverse hopefully at least one page of edges and pick one at random using uniform
+		   	// distribution. This is to account for the fact that the previous piece of code returns
+		   	// an out-vertex picked uniformly at random from its leaf page instead of being weighted
+		   	// by its out-degree
+		   	
+		   	// TODO Is this enough? The max should be large enough so that we traverse at least one page
+		   	int steps = (int) (Math.random() * Math.max(cursor.count(), 200));
+		   	while (steps --> 0) {
+		   		status = cursor.getNext(graph.key, graph.data, null);
+		   		if (status == OperationStatus.NOTFOUND) {
+		   			status = cursor.getFirst(graph.key, graph.data, null);
+		   		}
+		   	}
+		    cursor.close();
+	   	}
+	    while (status == OperationStatus.NOTFOUND);
+    	
+    	
+    	// Now return the encountered edge 
+    	
+    	long out = RecordNumberBinding.entryToRecordNumber(graph.key);
+    	DupEdgeData d = edgeDataBinding.entryToObject(graph.data);
+    	return new DupEdge(graph, d.id, out, d.label);
     }
 
     protected void remove() throws DatabaseException{

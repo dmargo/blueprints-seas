@@ -24,6 +24,8 @@ import java.io.File;
  */
 public class DupGraph implements Graph {
 	
+	final protected static DupRecordNumberComparator dupRecordNumberComparator = new DupRecordNumberComparator();
+	
     private Environment dbEnv;
     
     //private Database classDb;
@@ -62,14 +64,17 @@ public class DupGraph implements Graph {
      
             DatabaseConfig dbConfig = new DatabaseConfig();
             dbConfig.setAllowCreate(true);
-            
             dbConfig.setType(DatabaseType.BTREE);
+            dbConfig.setBtreeComparator(dupRecordNumberComparator);
+            
             //this.classDb = this.dbEnv.openDatabase(null, "class.db", null, dbConfig);
             //this.classCatalog = new StoredClassCatalog(this.classDb);
             //this.serialBinding = new SerialBinding<Object>(this.classCatalog, Object.class);
             
             dbConfig.setSortedDuplicates(true);
             this.outDb = this.dbEnv.openDatabase(null, "out.db", null, dbConfig);
+            
+            dbConfig.setBtreeComparator(null);
             this.inDb = this.dbEnv.openDatabase(null, "in.db", null, dbConfig);
             this.vertexPropertyDb = this.dbEnv.openDatabase(null, "vertexProperty.db", null, dbConfig);
             this.edgePropertyDb = this.dbEnv.openDatabase(null, "edgeProperty.db", null, dbConfig);

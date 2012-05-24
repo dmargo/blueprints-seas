@@ -280,7 +280,7 @@ public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
         do {
             try {
             	node = rawGraph.getNodeById((long)(Math.random()
-            			* nodeManager.getHighestPossibleIdInUse(Node.class)));
+            			* (nodeManager.getHighestPossibleIdInUse(Node.class) + 1)));
             }
             catch (NotFoundException loop) {
             	continue;
@@ -304,7 +304,7 @@ public class Neo4jGraph implements TransactionalGraph, IndexableGraph {
         do {
             try {
             	rel = rawGraph.getRelationshipById((long)(Math.random()
-            			* nodeManager.getHighestPossibleIdInUse(Relationship.class)));
+            			* (nodeManager.getHighestPossibleIdInUse(Relationship.class) + 1)));
             }
             catch (NotFoundException loop) {
             	continue;

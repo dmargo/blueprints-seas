@@ -3,6 +3,7 @@ package com.tinkerpop.blueprints.pgm.impls.dup;
 import com.sleepycat.bind.RecordNumberBinding;
 import com.sleepycat.bind.tuple.StringBinding;
 import com.sleepycat.db.Cursor;
+import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.OperationStatus;
 import com.tinkerpop.blueprints.pgm.Edge;
@@ -38,6 +39,8 @@ public class DupEdge extends DupElement implements Edge {
 		final DupVertex inVertex,
 		final String label) throws DatabaseException
     {
+    	DatabaseEntry data = graph.data.get();
+    	
     	// First, verify in and out vertex existence.
     	OperationStatus status;
     	status = graph.vertexDb.exists(null, outVertex.id);
@@ -55,12 +58,12 @@ public class DupEdge extends DupElement implements Edge {
         
         // Then, add out and in edge records.
         DupEdgeData edata = new DupEdgeData(label, this.in);
-        DupEdge.edgeDataBinding.objectToEntry(edata, graph.data);
+        DupEdge.edgeDataBinding.objectToEntry(edata, data);
         
-    	if (graph.outDb.putNoDupData(null, outVertex.id, graph.data) == OperationStatus.SUCCESS) {
+    	if (graph.outDb.putNoDupData(null, outVertex.id, data) == OperationStatus.SUCCESS) {
     		edata.id = this.out;
-    		DupEdge.edgeDataBinding.objectToEntry(edata, graph.data);
-    		graph.inDb.putNoDupData(null, inVertex.id, graph.data);
+    		DupEdge.edgeDataBinding.objectToEntry(edata, data);
+    		graph.inDb.putNoDupData(null, inVertex.id, data);
     		//XXX dmargo: This needs to be a transaction to be safe.
     	}
         
@@ -86,14 +89,16 @@ public class DupEdge extends DupElement implements Edge {
     	DupEdgeKey ekey = (DupEdgeKey) id;
     	if (ekey.out < 0)
     		throw new IllegalArgumentException("Invalid ID: vertex ID's cannot be negative");
-    	
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+   	
     	// Look for a valid edge record.    	
-    	RecordNumberBinding.recordNumberToEntry(ekey.out, graph.key);
+    	RecordNumberBinding.recordNumberToEntry(ekey.out, key);
 
 		DupEdgeData edata = new DupEdgeData(ekey.label, ekey.in);
-		DupEdge.edgeDataBinding.objectToEntry(edata, graph.data);
+		DupEdge.edgeDataBinding.objectToEntry(edata, data);
 
-        if (graph.outDb.getSearchBoth(null, graph.key, graph.data, null) != OperationStatus.SUCCESS)
+        if (graph.outDb.getSearchBoth(null, key, data, null) != OperationStatus.SUCCESS)
         	throw new RuntimeException("DupEdge: Edge " + id + " does not exist.");
         
         this.graph = graph;
@@ -122,6 +127,9 @@ public class DupEdge extends DupElement implements Edge {
     	// in which the in-degree of a node is constant. Warning: This is a hack.
         
     	OperationStatus status;
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+    	
     	do {
     		
     		// Get a random out-vertex using a distribution that is a rough approximation of what we
@@ -132,8 +140,8 @@ public class DupEdge extends DupElement implements Edge {
     		// account for this.
     		
 		   	Cursor cursor = graph.inDbRandom.openCursor(null, null);
-		   	RecordNumberBinding.recordNumberToEntry(DupRecordNumberComparator.RANDOM, graph.key);
-		   	status = cursor.getSearchKeyRange(graph.key, graph.data, null);
+		   	RecordNumberBinding.recordNumberToEntry(DupRecordNumberComparator.RANDOM, key);
+		   	status = cursor.getSearchKeyRange(key, data, null);
 		   	if (status == OperationStatus.NOTFOUND) {
 		   		cursor.close();
 		   		continue;
@@ -151,9 +159,9 @@ public class DupEdge extends DupElement implements Edge {
 		   	
 		   	int steps = (int) (Math.random() * Math.max(cursor.count(), 200));
 		   	while (steps --> 0) {
-		   		status = cursor.getNext(graph.key, graph.data, null);
+		   		status = cursor.getNext(key, data, null);
 		   		if (status == OperationStatus.NOTFOUND) {
-		   			status = cursor.getFirst(graph.key, graph.data, null);
+		   			status = cursor.getFirst(key, data, null);
 		   		}
 		   	}
 		    cursor.close();
@@ -163,38 +171,41 @@ public class DupEdge extends DupElement implements Edge {
     	
     	// Now return the encountered edge 
     	
-    	long other = RecordNumberBinding.entryToRecordNumber(graph.key);
-    	DupEdgeData d = edgeDataBinding.entryToObject(graph.data);
+    	long other = RecordNumberBinding.entryToRecordNumber(key);
+    	DupEdgeData d = edgeDataBinding.entryToObject(data);
     	return new DupEdge(graph, other, d.id, d.label);
     }
     
 
     protected void remove() throws DatabaseException{
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+    	
     	// Remove property records.
     	DupEdgeKey ekey = new DupEdgeKey(this.out, this.label, this.in);
-      	DupEdge.edgeKeyBinding.objectToEntry(ekey, this.graph.key);
+      	DupEdge.edgeKeyBinding.objectToEntry(ekey, key);
     	
-        this.graph.edgePropertyDb.delete(null, this.graph.key);
+        this.graph.edgePropertyDb.delete(null, key);
         
         // Remove edge records.
-        RecordNumberBinding.recordNumberToEntry(this.out, this.graph.key);
+        RecordNumberBinding.recordNumberToEntry(this.out, key);
         
         DupEdgeData edata = new DupEdgeData(this.label, this.in);
-        DupEdge.edgeDataBinding.objectToEntry(edata, this.graph.data);
+        DupEdge.edgeDataBinding.objectToEntry(edata, data);
         
 
     	Cursor cursor = this.graph.outDb.openCursor(null, null);
-    	if (cursor.getSearchBoth(this.graph.key, this.graph.data, null) == OperationStatus.SUCCESS)
+    	if (cursor.getSearchBoth(key, data, null) == OperationStatus.SUCCESS)
     		cursor.delete();
     	cursor.close();
     	
-    	RecordNumberBinding.recordNumberToEntry(this.in, this.graph.key);
+    	RecordNumberBinding.recordNumberToEntry(this.in, key);
     	
     	edata.id = this.out;
-    	DupEdge.edgeDataBinding.objectToEntry(edata, this.graph.data);
+    	DupEdge.edgeDataBinding.objectToEntry(edata, data);
     	
     	cursor = this.graph.inDb.openCursor(null,  null);
-    	if (cursor.getSearchBoth(this.graph.key, this.graph.data, null) == OperationStatus.SUCCESS)
+    	if (cursor.getSearchBoth(key, data, null) == OperationStatus.SUCCESS)
     		cursor.delete();
     	cursor.close();
 
@@ -239,21 +250,23 @@ public class DupEdge extends DupElement implements Edge {
     public Object getProperty(final String pkey) {
     	Cursor cursor;
     	OperationStatus status;
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
     	
     	DupEdgeKey ekey = new DupEdgeKey(this.out, this.label, this.in);
-    	DupEdge.edgeKeyBinding.objectToEntry(ekey, this.graph.key);
+    	DupEdge.edgeKeyBinding.objectToEntry(ekey, key);
     	
-    	StringBinding.stringToEntry(pkey, this.graph.data);
+    	StringBinding.stringToEntry(pkey, data);
     	
         try {
         	cursor = graph.vertexPropertyDb.openCursor(null,  null);
         	
-        	status = cursor.getSearchBothRange(this.graph.key, this.graph.data, null);
+        	status = cursor.getSearchBothRange(key, data, null);
         	if (status == OperationStatus.SUCCESS) {
         		
-        		this.graph.key.setPartial(0, 0, true);
-        		status = cursor.getCurrent(this.graph.key, this.graph.data, null);
-        		this.graph.key.setPartial(false);
+        		key.setPartial(0, 0, true);
+        		status = cursor.getCurrent(key, data, null);
+        		key.setPartial(false);
         	}
         	
         	cursor.close();
@@ -266,16 +279,18 @@ public class DupEdge extends DupElement implements Edge {
         if (status != OperationStatus.SUCCESS)
         	return null;
         
-        DupPropertyData result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+        DupPropertyData result = DupElement.propertyDataBinding.entryToObject(data);
         return pkey.equals(result.pkey) ? result.value : null;
     }
 
     public Set<String> getPropertyKeys() {
     	Cursor cursor;
     	OperationStatus status;
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
     	
     	DupEdgeKey ekey = new DupEdgeKey(this.out, this.label, this.in);
-    	DupEdge.edgeKeyBinding.objectToEntry(ekey, this.graph.key);
+    	DupEdge.edgeKeyBinding.objectToEntry(ekey, key);
     	
     	DupPropertyData result;
 		Set<String> ret = new HashSet<String>();
@@ -283,15 +298,15 @@ public class DupEdge extends DupElement implements Edge {
 		try {
 			cursor = this.graph.vertexPropertyDb.openCursor(null, null);
 			
-			status = cursor.getSearchKey(this.graph.key, this.graph.data, null);
-			this.graph.key.setPartial(0, 0, true);
+			status = cursor.getSearchKey(key, data, null);
+			key.setPartial(0, 0, true);
 			while (status == OperationStatus.SUCCESS) {
 				
-				result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+				result = DupElement.propertyDataBinding.entryToObject(data);
 				ret.add(result.pkey);
-				status = cursor.getNextDup(this.graph.key, this.graph.data, null);
+				status = cursor.getNextDup(key, data, null);
 			}
-			this.graph.key.setPartial(false);
+			key.setPartial(false);
 			
 			cursor.close();
 		} catch (RuntimeException e) {
@@ -309,11 +324,13 @@ public class DupEdge extends DupElement implements Edge {
     	
     	Cursor cursor;
     	OperationStatus status;
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
     	
     	DupEdgeKey ekey = new DupEdgeKey(this.out, this.label, this.in);
-    	DupEdge.edgeKeyBinding.objectToEntry(ekey, this.graph.key);
+    	DupEdge.edgeKeyBinding.objectToEntry(ekey, key);
     	
-    	StringBinding.stringToEntry(pkey, this.graph.data);
+    	StringBinding.stringToEntry(pkey, data);
     	DupPropertyData pdata;
     	
         try {
@@ -322,15 +339,15 @@ public class DupEdge extends DupElement implements Edge {
         	cursor = this.graph.vertexPropertyDb.openCursor(null,  null);
         	
         	// If pkey exists, delete it.
-        	status = cursor.getSearchBothRange(this.graph.key, this.graph.data, null);
+        	status = cursor.getSearchBothRange(key, data, null);
         	if (status == OperationStatus.SUCCESS) {
         		
         		//XXX dmargo: This could be done partially, but I'm not sure the benefits
         		//outweigh instantiating a new DatabaseEntry.
-        		status = cursor.getCurrent(this.graph.key, this.graph.data, null);
+        		status = cursor.getCurrent(key, data, null);
         		if (status == OperationStatus.SUCCESS) {
         			
-        			pdata = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+        			pdata = DupElement.propertyDataBinding.entryToObject(data);
         			if (pkey.equals(pdata.pkey))
         				cursor.delete();
         		} else
@@ -341,8 +358,8 @@ public class DupEdge extends DupElement implements Edge {
         	// Put the new pkey and value.
         	pdata.pkey = pkey;
         	pdata.value = value;
-        	DupElement.propertyDataBinding.objectToEntry(pdata, this.graph.data);
-        	status = cursor.put(this.graph.key, this.graph.data);
+        	DupElement.propertyDataBinding.objectToEntry(pdata, data);
+        	status = cursor.put(key, data);
         	
         	cursor.close();
         	
@@ -362,11 +379,13 @@ public class DupEdge extends DupElement implements Edge {
     public Object removeProperty(final String pkey) {
     	Cursor cursor;
     	OperationStatus status;
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
     	
     	DupEdgeKey ekey = new DupEdgeKey(this.out, this.label, this.in);
-    	DupEdge.edgeKeyBinding.objectToEntry(ekey, this.graph.key);
+    	DupEdge.edgeKeyBinding.objectToEntry(ekey, key);
     	
-    	StringBinding.stringToEntry(pkey, this.graph.data);
+    	StringBinding.stringToEntry(pkey, data);
     	DupPropertyData result = null;
     	
         try {
@@ -375,14 +394,14 @@ public class DupEdge extends DupElement implements Edge {
         	cursor = graph.vertexPropertyDb.openCursor(null,  null);
         	
         	// If pkey exists, delete it.
-        	if (cursor.getSearchBothRange(this.graph.key, this.graph.data, null) == OperationStatus.SUCCESS) {
+        	if (cursor.getSearchBothRange(key, data, null) == OperationStatus.SUCCESS) {
         		
-        		this.graph.key.setPartial(0, 0, true);
-        		status = cursor.getCurrent(this.graph.key, this.graph.data, null);
-        		this.graph.key.setPartial(false);
+        		key.setPartial(0, 0, true);
+        		status = cursor.getCurrent(key, data, null);
+        		key.setPartial(false);
         		if (status == OperationStatus.SUCCESS) {
         			
-        			result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+        			result = DupElement.propertyDataBinding.entryToObject(data);
         			if (pkey.equals(result.pkey))
         				cursor.delete();
         		}

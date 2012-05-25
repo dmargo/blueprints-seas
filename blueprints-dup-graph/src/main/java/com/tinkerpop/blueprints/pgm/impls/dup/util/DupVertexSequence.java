@@ -18,6 +18,7 @@ public class DupVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
     private DupGraph graph;
     private Cursor cursor;    
     private DatabaseEntry key = new DatabaseEntry();
+    private DatabaseEntry data = new DatabaseEntry();
     private boolean useStoredKey = false;
     
     public DupVertexSequence(final DupGraph graph) {
@@ -25,7 +26,7 @@ public class DupVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
     	
         try {
             this.cursor = graph.vertexDb.openCursor(null, null);
-            status = this.cursor.getFirst(this.key, graph.data, null);
+            status = this.cursor.getFirst(this.key, this.data, null);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -50,7 +51,7 @@ public class DupVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
     
 	    OperationStatus status;  
 	    try {
-	        status = this.cursor.getNext(this.key, this.graph.data, null);   	        
+	        status = this.cursor.getNext(this.key, this.data, null);   	        
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -74,7 +75,7 @@ public class DupVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
 	    OperationStatus status;
 	    
 	    try {
-	        status = this.cursor.getNext(this.key, this.graph.data, null);   	        
+	        status = this.cursor.getNext(this.key, this.data, null);   	        
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

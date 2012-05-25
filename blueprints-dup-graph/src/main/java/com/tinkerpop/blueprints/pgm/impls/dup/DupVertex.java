@@ -25,9 +25,10 @@ public class DupVertex extends DupElement implements Vertex {
     private DupGraph graph;
     protected DatabaseEntry id = new DatabaseEntry();
 
-    protected DupVertex(final DupGraph graph) throws DatabaseException{    	
-		graph.data.setSize(0);
-		if (graph.vertexDb.append(null, this.id, graph.data) != OperationStatus.SUCCESS)
+    protected DupVertex(final DupGraph graph) throws DatabaseException{
+    	DatabaseEntry data = graph.data.get();
+		data.setSize(0);
+		if (graph.vertexDb.append(null, this.id, data) != OperationStatus.SUCCESS)
 			throw new RuntimeException("DupVertex: Failed to create vertex ID.");
 			
 		this.graph = graph;
@@ -52,24 +53,27 @@ public class DupVertex extends DupElement implements Vertex {
     
     public static DupVertex getRandomVertex(final DupGraph graph) throws DatabaseException {
     	
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+    	
     	// Note: This implementation assumes that the number of vertex deletions is negligible
     	// as compared to the total number of nodes
     	
 		// Get the last ID# in the graph.
 		Cursor cursor = graph.vertexDb.openCursor(null, null);
-        OperationStatus status = cursor.getLast(graph.key, graph.data, null);
+        OperationStatus status = cursor.getLast(key, data, null);
         cursor.close();
         if (status == OperationStatus.NOTFOUND) throw new NoSuchElementException();
-        long lastId = RecordNumberBinding.entryToRecordNumber(graph.key);
+        long lastId = RecordNumberBinding.entryToRecordNumber(key);
         
         // Get a random element
         cursor = graph.vertexDb.openCursor(null, null);
-        RecordNumberBinding.recordNumberToEntry((long)(1 + lastId * Math.random()), graph.key);
-        status = cursor.getSearchKeyRange(graph.key, graph.data, null);
+        RecordNumberBinding.recordNumberToEntry((long)(1 + lastId * Math.random()), key);
+        status = cursor.getSearchKeyRange(key, data, null);
         cursor.close();
         if (status == OperationStatus.NOTFOUND) throw new InternalError();
         
-        return new DupVertex(graph, graph.key);
+        return new DupVertex(graph, key);
     }
 
     protected void remove() throws DatabaseException {
@@ -108,17 +112,19 @@ public class DupVertex extends DupElement implements Vertex {
     public Object getProperty(final String pkey) {
     	Cursor cursor;
     	OperationStatus status;
-    	StringBinding.stringToEntry(pkey, this.graph.data);
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+    	StringBinding.stringToEntry(pkey, data);
     	
         try {
         	cursor = this.graph.vertexPropertyDb.openCursor(null,  null);
         	
-        	status = cursor.getSearchBothRange(this.id, this.graph.data, null);
+        	status = cursor.getSearchBothRange(this.id, data, null);
         	if (status == OperationStatus.SUCCESS) {
         		
-        		this.graph.key.setPartial(0, 0, true);
-        		status = cursor.getCurrent(this.graph.key, this.graph.data, null);
-        		this.graph.key.setPartial(false);
+        		key.setPartial(0, 0, true);
+        		status = cursor.getCurrent(key, data, null);
+        		key.setPartial(false);
         	}
         	
         	cursor.close();
@@ -131,7 +137,7 @@ public class DupVertex extends DupElement implements Vertex {
         if (status != OperationStatus.SUCCESS)
         	return null;
         
-        DupPropertyData result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+        DupPropertyData result = DupElement.propertyDataBinding.entryToObject(data);
         return pkey.equals(result.pkey) ? result.value : null;
     }
 
@@ -140,19 +146,21 @@ public class DupVertex extends DupElement implements Vertex {
     	OperationStatus status;
     	DupPropertyData result;
 		Set<String> ret = new HashSet<String>();
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
 		
 		try {
 			cursor = this.graph.vertexPropertyDb.openCursor(null, null);
 			
-			status = cursor.getSearchKey(this.id, this.graph.data, null);
-			this.graph.key.setPartial(0, 0, true);
+			status = cursor.getSearchKey(this.id, data, null);
+			key.setPartial(0, 0, true);
 			while (status == OperationStatus.SUCCESS) {
 				
-				result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+				result = DupElement.propertyDataBinding.entryToObject(data);
 				ret.add(result.pkey);
-				status = cursor.getNextDup(this.graph.key, this.graph.data, null);
+				status = cursor.getNextDup(key, data, null);
 			}
-			this.graph.key.setPartial(false);
+			key.setPartial(false);
 			
 			cursor.close();
 		} catch (RuntimeException e) {
@@ -170,7 +178,9 @@ public class DupVertex extends DupElement implements Vertex {
     	
     	Cursor cursor;
     	OperationStatus status;
-    	StringBinding.stringToEntry(pkey, this.graph.data);
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+    	StringBinding.stringToEntry(pkey, data);
     	DupPropertyData pdata;
     	
         try {
@@ -179,15 +189,15 @@ public class DupVertex extends DupElement implements Vertex {
         	cursor = this.graph.vertexPropertyDb.openCursor(null,  null);
         	
         	// If pkey exists, delete it.
-        	status = cursor.getSearchBothRange(this.id, this.graph.data, null);
+        	status = cursor.getSearchBothRange(this.id, data, null);
         	if (status == OperationStatus.SUCCESS) {
         		
-        		this.graph.key.setPartial(0, 0, true);
-        		status = cursor.getCurrent(this.graph.key, this.graph.data, null);
-        		this.graph.key.setPartial(false);
+        		key.setPartial(0, 0, true);
+        		status = cursor.getCurrent(key, data, null);
+        		key.setPartial(false);
         		if (status == OperationStatus.SUCCESS) {
         			
-        			pdata = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+        			pdata = DupElement.propertyDataBinding.entryToObject(data);
         			if (pkey.equals(pdata.pkey))
         				cursor.delete();
         		} else
@@ -198,8 +208,8 @@ public class DupVertex extends DupElement implements Vertex {
         	// Put the new pkey and value.
         	pdata.pkey = pkey;
         	pdata.value = value;
-        	DupElement.propertyDataBinding.objectToEntry(pdata, this.graph.data);
-        	status = cursor.put(this.id, this.graph.data);
+        	DupElement.propertyDataBinding.objectToEntry(pdata, data);
+        	status = cursor.put(this.id, data);
         	
         	cursor.close();
         	
@@ -219,7 +229,9 @@ public class DupVertex extends DupElement implements Vertex {
     public Object removeProperty(final String pkey) {
     	Cursor cursor;
     	OperationStatus status;
-    	StringBinding.stringToEntry(pkey, this.graph.data);
+    	DatabaseEntry key = graph.key.get();
+    	DatabaseEntry data = graph.data.get();
+    	StringBinding.stringToEntry(pkey, data);
     	DupPropertyData result = null;
     	
         try {
@@ -228,14 +240,14 @@ public class DupVertex extends DupElement implements Vertex {
         	cursor = this.graph.vertexPropertyDb.openCursor(null,  null);
         	
         	// If pkey exists, delete it.
-        	if (cursor.getSearchBothRange(this.id, this.graph.data, null) == OperationStatus.SUCCESS) {
+        	if (cursor.getSearchBothRange(this.id, data, null) == OperationStatus.SUCCESS) {
         		
-        		this.graph.key.setPartial(0, 0, false);
-        		status = cursor.getCurrent(new DatabaseEntry(), this.graph.data, null);
-        		this.graph.key.setPartial(true);
+        		key.setPartial(0, 0, false);
+        		status = cursor.getCurrent(new DatabaseEntry(), data, null);
+        		key.setPartial(true);
         		if (status == OperationStatus.SUCCESS) {
         			
-        			result = DupElement.propertyDataBinding.entryToObject(this.graph.data);
+        			result = DupElement.propertyDataBinding.entryToObject(data);
         			if (pkey.equals(result.pkey))
         				cursor.delete();
         		}

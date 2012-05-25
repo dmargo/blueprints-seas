@@ -36,11 +36,18 @@ public class DupGraph implements Graph {
     protected Database vertexPropertyDb;
     protected Database edgePropertyDb;
     
-    // XXX This causes major concurrency problems
-    
-    final public DatabaseEntry key = new DatabaseEntry();
-    final public DatabaseEntry data = new DatabaseEntry();
+    final public ThreadLocal<DatabaseEntry> key = new ThreadLocal<DatabaseEntry>() {
+        protected DatabaseEntry initialValue() {
+            return new DatabaseEntry();
+        }
+    };
+    final public ThreadLocal<DatabaseEntry> data = new ThreadLocal<DatabaseEntry>() {
+        protected DatabaseEntry initialValue() {
+            return new DatabaseEntry();
+        }
+    };
 
+    
     /**
      * Creates a new instance of a BdbGraph at directory.
      *

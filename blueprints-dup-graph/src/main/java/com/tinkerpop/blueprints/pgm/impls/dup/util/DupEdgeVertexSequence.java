@@ -19,6 +19,7 @@ public class DupEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
     private DupGraph graph;
     private Cursor cursor;
     private DatabaseEntry id = new DatabaseEntry();
+    private DatabaseEntry key = new DatabaseEntry();
     private DatabaseEntry data = new DatabaseEntry();
     private boolean useStored = false;
     private boolean getOut;
@@ -64,9 +65,9 @@ public class DupEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
 	    OperationStatus status;
 	    
 	    try {
-	    	this.graph.key.setPartial(0, 0, true);
+	    	this.key.setPartial(0, 0, true);
             status = this.cursor.getNextDup(this.id, this.data, null);
-            this.graph.key.setPartial(false);
+            this.key.setPartial(false);
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -94,9 +95,9 @@ public class DupEdgeVertexSequence implements Iterator<Edge>, Iterable<Edge> {
 	    OperationStatus status;
 	    
 	    try {
-	    	this.graph.key.setPartial(0, 0, true);
-            status = this.cursor.getNextDup(this.graph.key, this.data, null);
-            this.graph.key.setPartial(false);
+	    	this.key.setPartial(0, 0, true);
+            status = this.cursor.getNextDup(this.key, this.data, null);
+            this.key.setPartial(false);
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

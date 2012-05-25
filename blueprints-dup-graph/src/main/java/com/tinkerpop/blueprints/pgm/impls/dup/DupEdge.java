@@ -118,11 +118,6 @@ public class DupEdge extends DupElement implements Edge {
     	
     	// XXX This will loop forever if there are no edges
     	
-    	// TODO Use a dup comparison function if it has a chance to speed things up
-    	// TODO It would be safer to do this on a read-only copy of the database, so that
-    	//      we do not risk our special comparison function on the master copy and
-    	//      thus potentially corrupt it if something goes horribly wrong
-    	
     	// Note: Use inDb instead of outDb, since most of our graphs are Barabasi graphs,
     	// in which the in-degree of a node is constant. Warning: This is a hack.
         
@@ -134,9 +129,9 @@ public class DupEdge extends DupElement implements Edge {
     		// random edges using uniform distribution. The following code would choose a random leaf
     		// page according to the aforementioned approximation to the given distribution, but it
     		// will pick an out-vertex uniformly at random from the leaf page, so we still need to
-    		// account for this
+    		// account for this.
     		
-		   	Cursor cursor = graph.inDb.openCursor(null, null);
+		   	Cursor cursor = graph.inDbRandom.openCursor(null, null);
 		   	RecordNumberBinding.recordNumberToEntry(DupRecordNumberComparator.RANDOM, graph.key);
 		   	status = cursor.getSearchKeyRange(graph.key, graph.data, null);
 		   	if (status == OperationStatus.NOTFOUND) {
@@ -148,9 +143,12 @@ public class DupEdge extends DupElement implements Edge {
 		   	// Now traverse hopefully at least one page of edges and pick one at random using uniform
 		   	// distribution. This is to account for the fact that the previous piece of code returns
 		   	// an out-vertex picked uniformly at random from its leaf page instead of being weighted
-		   	// by its out-degree
+		   	// by its out-degree. Note that we did not use a duplicates comparison function instead
+		   	// precisely for this reason and also because it would not do a good job of selecting random
+		   	// edges for nodes with a small odd in-degree, which are so prevalent in our Barabasi graphs. 
 		   	
-		   	// TODO Is this enough? The max should be large enough so that we traverse at least one page
+		   	// The max should be large enough so that we traverse at least one page... but is ours good enough?
+		   	
 		   	int steps = (int) (Math.random() * Math.max(cursor.count(), 200));
 		   	while (steps --> 0) {
 		   		status = cursor.getNext(graph.key, graph.data, null);
@@ -169,6 +167,7 @@ public class DupEdge extends DupElement implements Edge {
     	DupEdgeData d = edgeDataBinding.entryToObject(graph.data);
     	return new DupEdge(graph, other, d.id, d.label);
     }
+    
 
     protected void remove() throws DatabaseException{
     	// Remove property records.

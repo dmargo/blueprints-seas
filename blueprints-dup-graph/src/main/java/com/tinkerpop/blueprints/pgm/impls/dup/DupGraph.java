@@ -20,21 +20,19 @@ import java.io.File;
  * A Blueprints implementation of Berkeley database using duplicates (http://www.oracle.com)
  *
  * @author Daniel Margo (http://www.eecs.harvard.edu/~dmargo)
- * @author Elaine Angelino (http://www.eecs.harvard.edu/~elaine/)
+ * @author Elaine Angelino (http://www.eecs.harvard.edu/~elaine)
+ * @author Peter Macko (http://www.eecs.harvard.edu/~pmacko)
  */
 public class DupGraph implements Graph {
 	
 	final protected static DupRecordNumberComparator dupRecordNumberComparator = new DupRecordNumberComparator();
 	
     private Environment dbEnv;
-    
-    //private Database classDb;
-    //private StoredClassCatalog classCatalog;
-    //protected SerialBinding<Object> serialBinding;
   
     public Database vertexDb;
     public Database outDb;
     public Database inDb;
+    public Database inDbRandom;
     protected Database vertexPropertyDb;
     protected Database edgePropertyDb;
     
@@ -65,20 +63,19 @@ public class DupGraph implements Graph {
             DatabaseConfig dbConfig = new DatabaseConfig();
             dbConfig.setAllowCreate(true);
             dbConfig.setType(DatabaseType.BTREE);
-            dbConfig.setBtreeComparator(dupRecordNumberComparator);
-            
-            //this.classDb = this.dbEnv.openDatabase(null, "class.db", null, dbConfig);
-            //this.classCatalog = new StoredClassCatalog(this.classDb);
-            //this.serialBinding = new SerialBinding<Object>(this.classCatalog, Object.class);
-            
             dbConfig.setSortedDuplicates(true);
             this.outDb = this.dbEnv.openDatabase(null, "out.db", null, dbConfig);
             this.inDb = this.dbEnv.openDatabase(null, "in.db", null, dbConfig);
-            
-            dbConfig.setBtreeComparator(null);
             this.vertexPropertyDb = this.dbEnv.openDatabase(null, "vertexProperty.db", null, dbConfig);
             this.edgePropertyDb = this.dbEnv.openDatabase(null, "edgeProperty.db", null, dbConfig);
             
+            dbConfig.setBtreeComparator(dupRecordNumberComparator);
+            dbConfig.setReadOnly(true);
+            dbConfig.setAllowCreate(false);
+            this.inDbRandom = this.dbEnv.openDatabase(null, "in.db", null, dbConfig);
+
+            dbConfig = new DatabaseConfig();
+            dbConfig.setAllowCreate(true);
             dbConfig.setSortedDuplicates(false);
             dbConfig.setType(DatabaseType.QUEUE);
             dbConfig.setRecordLength(0);
@@ -267,10 +264,8 @@ public class DupGraph implements Graph {
             vertexDb.close();
             vertexDb = null;
             
-            //classCatalog.close();
-            //classCatalog = null;
-            //classDb.close(); classCatalog.close() does this implicitly
-            //classDb = null;
+            inDbRandom.close();
+            inDbRandom = null;
             
             dbEnv.close();
             dbEnv = null;

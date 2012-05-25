@@ -73,9 +73,9 @@ public class DupGraph implements Graph {
             
             dbConfig.setSortedDuplicates(true);
             this.outDb = this.dbEnv.openDatabase(null, "out.db", null, dbConfig);
+            this.inDb = this.dbEnv.openDatabase(null, "in.db", null, dbConfig);
             
             dbConfig.setBtreeComparator(null);
-            this.inDb = this.dbEnv.openDatabase(null, "in.db", null, dbConfig);
             this.vertexPropertyDb = this.dbEnv.openDatabase(null, "vertexProperty.db", null, dbConfig);
             this.edgePropertyDb = this.dbEnv.openDatabase(null, "edgeProperty.db", null, dbConfig);
             

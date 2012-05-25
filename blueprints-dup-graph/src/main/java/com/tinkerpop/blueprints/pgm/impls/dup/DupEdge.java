@@ -50,6 +50,9 @@ public class DupEdge extends DupElement implements Edge {
         if (status != OperationStatus.SUCCESS)
         	throw new RuntimeException("DupEdge: Vertex " + this.out + " or " + this.in + " does not exist.");
         
+        if (out < 0 || in < 0)
+        	throw new InternalError("Record numbers are not supposed to be negative");
+        
         // Then, add out and in edge records.
         DupEdgeData edata = new DupEdgeData(label, this.in);
         DupEdge.edgeDataBinding.objectToEntry(edata, graph.data);
@@ -81,6 +84,8 @@ public class DupEdge extends DupElement implements Edge {
     	if(!(id instanceof DupEdgeKey))
     		throw new IllegalArgumentException("DupEdge: " + id + " is not a valid Edge ID.");
     	DupEdgeKey ekey = (DupEdgeKey) id;
+    	if (ekey.out < 0)
+    		throw new IllegalArgumentException("Invalid ID: vertex ID's cannot be negative");
     	
     	// Look for a valid edge record.    	
     	RecordNumberBinding.recordNumberToEntry(ekey.out, graph.key);
@@ -112,6 +117,14 @@ public class DupEdge extends DupElement implements Edge {
     public static DupEdge getRandomEdge(final DupGraph graph) throws DatabaseException {
     	
     	// XXX This will loop forever if there are no edges
+    	
+    	// TODO Use a dup comparison function if it has a chance to speed things up
+    	// TODO It would be safer to do this on a read-only copy of the database, so that
+    	//      we do not risk our special comparison function on the master copy and
+    	//      thus potentially corrupt it if something goes horribly wrong
+    	
+    	// Note: Use inDb instead of outDb, since most of our graphs are Barabasi graphs,
+    	// in which the in-degree of a node is constant. Warning: This is a hack.
         
     	OperationStatus status;
     	do {
@@ -123,7 +136,7 @@ public class DupEdge extends DupElement implements Edge {
     		// will pick an out-vertex uniformly at random from the leaf page, so we still need to
     		// account for this
     		
-		   	Cursor cursor = graph.outDb.openCursor(null, null);
+		   	Cursor cursor = graph.inDb.openCursor(null, null);
 		   	RecordNumberBinding.recordNumberToEntry(DupRecordNumberComparator.RANDOM, graph.key);
 		   	status = cursor.getSearchKeyRange(graph.key, graph.data, null);
 		   	if (status == OperationStatus.NOTFOUND) {
@@ -152,9 +165,9 @@ public class DupEdge extends DupElement implements Edge {
     	
     	// Now return the encountered edge 
     	
-    	long out = RecordNumberBinding.entryToRecordNumber(graph.key);
+    	long other = RecordNumberBinding.entryToRecordNumber(graph.key);
     	DupEdgeData d = edgeDataBinding.entryToObject(graph.data);
-    	return new DupEdge(graph, d.id, out, d.label);
+    	return new DupEdge(graph, other, d.id, d.label);
     }
 
     protected void remove() throws DatabaseException{

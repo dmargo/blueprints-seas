@@ -30,27 +30,17 @@ public class SqlEdge extends SqlElement implements Edge {
 		final SqlVertex inVertex,
 		final String label) throws SQLException
     {
-    	ResultSet rs;
+    	// Note: There is no need to verify in and out vertex existence,
+    	// since the database integrity constrains already take care of it.
+ 
+		// Insert a new edge record.
     	
-    	// No need to verify in and out vertex existence, since the database integrity constrains already take care of it
-    	
-		/*graph.getEdgeVerticesStatement.setLong(1, outVertex.vid);
-		graph.getEdgeVerticesStatement.setLong(2, inVertex.vid);
-		ResultSet rs = graph.getEdgeVerticesStatement.executeQuery();
-		
-		rs.next();
-		boolean exists = rs.getBoolean(1);
-		rs.close();
-    	
-		if (!exists)
-			throw new RuntimeException("SqlGraph: Vertex " + outVertex.vid + " or " + inVertex.vid + " does not exist.");*/
-
-		// Then, insert a new edge record.
-		graph.addEdgeStatement.setLong(1, outVertex.vid);
-		graph.addEdgeStatement.setLong(2, inVertex.vid);
-		graph.addEdgeStatement.setString(3, label);
-		graph.addEdgeStatement.executeUpdate();
-		rs = graph.addEdgeStatement.getGeneratedKeys();
+    	PreparedStatement addEdgeStatement = graph.addEdgeStatement.get();
+		addEdgeStatement.setLong(1, outVertex.vid);
+		addEdgeStatement.setLong(2, inVertex.vid);
+		addEdgeStatement.setString(3, label);
+		addEdgeStatement.executeUpdate();
+		ResultSet rs = addEdgeStatement.getGeneratedKeys();
 		
 		rs.next();
 		this.eid = rs.getLong(1);
@@ -68,8 +58,9 @@ public class SqlEdge extends SqlElement implements Edge {
     	
     	this.eid = ((Long) id).longValue();
     	
-		graph.getEdgeStatement.setLong(1, this.eid);
-		ResultSet rs = graph.getEdgeStatement.executeQuery();
+    	PreparedStatement getEdgeStatement = graph.getEdgeStatement.get();
+		getEdgeStatement.setLong(1, this.eid);
+		ResultSet rs = getEdgeStatement.executeQuery();
 		
 		if (rs.next()) {
 			this.outId = rs.getLong(1);
@@ -100,19 +91,20 @@ public class SqlEdge extends SqlElement implements Edge {
     
     public static SqlEdge getRandomEdge(final SqlGraph graph) throws SQLException {
     	
-		ResultSet rs = graph.getMaxEdgeIdStatement.executeQuery();
+		ResultSet rs = graph.getMaxEdgeIdStatement.get().executeQuery();
 		rs.next();
 		long max = rs.getLong(1);
 		rs.close();
     	
     	// XXX Might fail if the last edge has been removed
 		
-		graph.getEdgeAfterStatement.setLong(1, (long) (Math.random() * max));
-		rs = graph.getEdgeAfterStatement.executeQuery();
+		PreparedStatement getEdgeAfterStatement = graph.getEdgeAfterStatement.get();
+		getEdgeAfterStatement.setLong(1, (long) (Math.random() * max));
+		rs = getEdgeAfterStatement.executeQuery();
 		if (!rs.next()) {
 			rs.close();
-			graph.getEdgeAfterStatement.setLong(1, 0);
-			rs = graph.getEdgeAfterStatement.executeQuery();
+			getEdgeAfterStatement.setLong(1, 0);
+			rs = getEdgeAfterStatement.executeQuery();
 			if (!rs.next()) {
 				rs.close();
 				throw new NoSuchElementException();
@@ -128,11 +120,14 @@ public class SqlEdge extends SqlElement implements Edge {
     }
     
     protected void remove() throws SQLException {
-    	this.graph.removeEdgePropertiesStatement.setLong(1, this.eid);
-    	this.graph.removeEdgePropertiesStatement.executeUpdate();
+    	PreparedStatement removeEdgePropertiesStatement = graph.removeEdgePropertiesStatement.get();
+    	PreparedStatement removeEdgeStatement = graph.removeEdgeStatement.get();
     	
-    	this.graph.removeEdgeStatement.setLong(1, this.eid);
-    	this.graph.removeEdgeStatement.executeUpdate();
+    	removeEdgePropertiesStatement.setLong(1, this.eid);
+    	removeEdgePropertiesStatement.executeUpdate();
+    	
+    	removeEdgeStatement.setLong(1, this.eid);
+    	removeEdgeStatement.executeUpdate();
 		
 		this.label = null;
         this.inId = -1;
@@ -173,9 +168,10 @@ public class SqlEdge extends SqlElement implements Edge {
         Object result = null;
     	
     	try {
-    		this.graph.getEdgePropertyStatement.setLong(1, this.eid);
-    		this.graph.getEdgePropertyStatement.setString(2, propertyKey);
-    		ResultSet rs = this.graph.getEdgePropertyStatement.executeQuery();
+    		PreparedStatement getEdgePropertyStatement = graph.getEdgePropertyStatement.get();
+    		getEdgePropertyStatement.setLong(1, this.eid);
+    		getEdgePropertyStatement.setString(2, propertyKey);
+    		ResultSet rs = getEdgePropertyStatement.executeQuery();
 
         	if (rs.next()) {
         		ObjectInputStream ois = new ObjectInputStream(rs.getBinaryStream(1));
@@ -196,8 +192,9 @@ public class SqlEdge extends SqlElement implements Edge {
 		Set<String> result = new HashSet<String>();
 		
 		try {
-			this.graph.getEdgePropertyKeysStatement.setLong(1, this.eid);
-			ResultSet rs = this.graph.getEdgePropertyKeysStatement.executeQuery();
+			PreparedStatement getEdgePropertyKeysStatement = graph.getEdgePropertyKeysStatement.get();
+			getEdgePropertyKeysStatement.setLong(1, this.eid);
+			ResultSet rs = getEdgePropertyKeysStatement.executeQuery();
 			
 			while (rs.next())
 				result.add(rs.getString(1));
@@ -223,10 +220,11 @@ public class SqlEdge extends SqlElement implements Edge {
         	
             graph.autoStartTransaction();
         	
-        	this.graph.setEdgePropertyStatement.setLong(1, this.eid);
-        	this.graph.setEdgePropertyStatement.setString(2, propertyKey);
-        	this.graph.setEdgePropertyStatement.setBytes(3, baos.toByteArray());
-        	this.graph.setEdgePropertyStatement.executeUpdate();
+            PreparedStatement setEdgePropertyStatement = graph.setEdgePropertyStatement.get();
+        	setEdgePropertyStatement.setLong(1, this.eid);
+        	setEdgePropertyStatement.setString(2, propertyKey);
+        	setEdgePropertyStatement.setBytes(3, baos.toByteArray());
+        	setEdgePropertyStatement.executeUpdate();
         	
         	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
@@ -246,9 +244,10 @@ public class SqlEdge extends SqlElement implements Edge {
         	
         	result = this.getProperty(propertyKey);
         	
-        	this.graph.removeEdgePropertyStatement.setLong(1, this.eid);
-        	this.graph.removeEdgePropertyStatement.setString(2, propertyKey);
-        	this.graph.removeEdgePropertyStatement.executeUpdate();
+        	PreparedStatement removeEdgePropertyStatement = graph.removeEdgePropertyStatement.get();
+        	removeEdgePropertyStatement.setLong(1, this.eid);
+        	removeEdgePropertyStatement.setString(2, propertyKey);
+        	removeEdgePropertyStatement.executeUpdate();
         	
             graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {

@@ -31,9 +31,11 @@ public class SqlPathTestSuite extends TestSuite {
         for (int i = 0; i < 19; ++i) {
         	graph.addEdge(null, vertices.get(i), vertices.get(i + 1), null);
         }
+        System.out.print("\t");
         for (Vertex v : graph.getShortestPath(vertices.get(0), vertices.get(19))) {
-        	System.out.println(v);
+        	System.out.print("" + v + " ");
         }
+        System.out.println();
+        graph.shutdown();
     }
 }
-

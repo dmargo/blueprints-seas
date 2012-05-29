@@ -22,9 +22,9 @@ public class SqlVertex extends SqlElement implements Vertex {
     protected long vid = -1;
 
     protected SqlVertex(final SqlGraph graph) throws SQLException {
-		graph.addVertexStatement.executeUpdate();
+		graph.addVertexStatement.get().executeUpdate();
 		
-		ResultSet rs = graph.addVertexStatement.getGeneratedKeys();
+		ResultSet rs = graph.addVertexStatement.get().getGeneratedKeys();
 		rs.next();
 		this.vid = rs.getLong(1);
 		rs.close();
@@ -38,8 +38,9 @@ public class SqlVertex extends SqlElement implements Vertex {
     	
     	this.vid = ((Long) id).longValue();
     	
-		graph.getVertexStatement.setLong(1, this.vid);
-		ResultSet rs = graph.getVertexStatement.executeQuery();	
+    	PreparedStatement getVertexStatement = graph.getVertexStatement.get();
+    	getVertexStatement.setLong(1, this.vid);
+		ResultSet rs = getVertexStatement.executeQuery();	
 		
 		rs.next();
 		boolean exists = rs.getBoolean(1);
@@ -58,17 +59,18 @@ public class SqlVertex extends SqlElement implements Vertex {
     
     public static SqlVertex getRandomVertex(final SqlGraph graph) throws SQLException {
     	
-		ResultSet rs = graph.getMaxVertexIdStatement.executeQuery();
+		ResultSet rs = graph.getMaxVertexIdStatement.get().executeQuery();
 		rs.next();
 		long max = rs.getLong(1);
 		rs.close();
 
-		graph.getVertexAfterStatement.setLong(1, (long) (Math.random() * max));
-		rs = graph.getVertexAfterStatement.executeQuery();
+		PreparedStatement getVertexAfterStatement = graph.getVertexAfterStatement.get();
+		getVertexAfterStatement.setLong(1, (long) (Math.random() * max));
+		rs = getVertexAfterStatement.executeQuery();
 		if (!rs.next()) {
 			rs.close();
-			graph.getVertexAfterStatement.setLong(1, 0);
-			rs = graph.getVertexAfterStatement.executeQuery();
+			getVertexAfterStatement.setLong(1, 0);
+			rs = getVertexAfterStatement.executeQuery();
 			if (!rs.next()) {
 				rs.close();
 				throw new NoSuchElementException();
@@ -88,11 +90,14 @@ public class SqlVertex extends SqlElement implements Vertex {
             ((SqlEdge) e).remove();
 
     	// Remove properties and vertex.
-    	this.graph.removeVertexPropertiesStatement.setLong(1, this.vid);
-    	this.graph.removeVertexPropertiesStatement.executeUpdate();
+    	PreparedStatement removeVertexPropertiesStatement = graph.removeVertexPropertiesStatement.get();
+    	PreparedStatement removeVertexStatement = graph.removeVertexStatement.get();
     	
-    	this.graph.removeVertexStatement.setLong(1, this.vid);
-    	this.graph.removeVertexStatement.executeUpdate();
+    	removeVertexPropertiesStatement.setLong(1, this.vid);
+    	removeVertexPropertiesStatement.executeUpdate();
+    	
+    	removeVertexStatement.setLong(1, this.vid);
+    	removeVertexStatement.executeUpdate();
 
         this.vid = -1;
         this.graph = null;
@@ -120,9 +125,10 @@ public class SqlVertex extends SqlElement implements Vertex {
         Object result = null;
     	
     	try {
-    		this.graph.getVertexPropertyStatement.setLong(1, this.vid);
-    		this.graph.getVertexPropertyStatement.setString(2, propertyKey);
-    		ResultSet rs = this.graph.getVertexPropertyStatement.executeQuery();
+    		PreparedStatement getVertexPropertyStatement = graph.getVertexPropertyStatement.get();
+    		getVertexPropertyStatement.setLong(1, this.vid);
+    		getVertexPropertyStatement.setString(2, propertyKey);
+    		ResultSet rs = getVertexPropertyStatement.executeQuery();
 
         	if (rs.next()) {
         		ObjectInputStream ois = new ObjectInputStream(rs.getBinaryStream(1));
@@ -143,8 +149,9 @@ public class SqlVertex extends SqlElement implements Vertex {
 		Set<String> result = new HashSet<String>();
 		
 		try {
-			this.graph.getVertexPropertyKeysStatement.setLong(1, this.vid);
-			ResultSet rs = this.graph.getVertexPropertyKeysStatement.executeQuery();
+			PreparedStatement getVertexPropertyKeysStatement = graph.getVertexPropertyKeysStatement.get();
+			getVertexPropertyKeysStatement.setLong(1, this.vid);
+			ResultSet rs = getVertexPropertyKeysStatement.executeQuery();
 			
 			while (rs.next())
 				result.add(rs.getString(1));
@@ -170,10 +177,11 @@ public class SqlVertex extends SqlElement implements Vertex {
         	
             graph.autoStartTransaction();
 
-        	this.graph.setVertexPropertyStatement.setLong(1, this.vid);
-        	this.graph.setVertexPropertyStatement.setString(2, propertyKey);
-        	this.graph.setVertexPropertyStatement.setBytes(3, baos.toByteArray());
-        	this.graph.setVertexPropertyStatement.executeUpdate();
+            PreparedStatement setVertexPropertyStatement = graph.setVertexPropertyStatement.get();
+        	setVertexPropertyStatement.setLong(1, this.vid);
+        	setVertexPropertyStatement.setString(2, propertyKey);
+        	setVertexPropertyStatement.setBytes(3, baos.toByteArray());
+        	setVertexPropertyStatement.executeUpdate();
     		        	
         	graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {
@@ -193,9 +201,10 @@ public class SqlVertex extends SqlElement implements Vertex {
         	
         	result = this.getProperty(propertyKey);
         	
-        	this.graph.removeVertexPropertyStatement.setLong(1, this.vid);
-        	this.graph.removeVertexPropertyStatement.setString(2, propertyKey);
-        	this.graph.removeVertexPropertyStatement.executeUpdate();
+        	PreparedStatement removeVertexPropertyStatement = graph.removeVertexPropertyStatement.get();
+        	removeVertexPropertyStatement.setLong(1, this.vid);
+        	removeVertexPropertyStatement.setString(2, propertyKey);
+        	removeVertexPropertyStatement.executeUpdate();
         	
             graph.autoStopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         } catch (RuntimeException e) {

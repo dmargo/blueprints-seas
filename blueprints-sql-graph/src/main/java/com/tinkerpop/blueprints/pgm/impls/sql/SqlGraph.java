@@ -159,80 +159,263 @@ public class SqlGraph implements TransactionalGraph {
         	
         	// Vertices:
         	
-        	this.addVertexStatement = this.connection.prepareStatement(
-        			"insert into vertex values(default)",
-        			Statement.RETURN_GENERATED_KEYS);
+        	this.addVertexStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement("insert into vertex values(default)",
+								Statement.RETURN_GENERATED_KEYS);
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
            	
-        	this.getVertexStatement = this.connection.prepareStatement(
-        			"select exists(select * from vertex where vid=?)");
+        	this.getVertexStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select exists(select * from vertex where vid=?)");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
            	
-        	this.getMaxVertexIdStatement = this.connection.prepareStatement(
-        			"select max(vid) from vertex;");
-        	this.getVertexAfterStatement = this.connection.prepareStatement(
-        			"select vid from vertex where vid >= ? order by vid limit 1;");
+        	this.getMaxVertexIdStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select max(vid) from vertex;");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
+        	this.getVertexAfterStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select vid from vertex where vid >= ? order by vid limit 1;");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.countVerticesStatement = this.connection.prepareStatement(
-        			"select count(*) from vertex;");
+        	this.countVerticesStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select count(*) from vertex;");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.removeVertexStatement = this.connection.prepareStatement(
-        			"delete from vertex where vid=?");
-        	this.removeVertexPropertiesStatement = this.connection.prepareStatement(
-        			"delete from vertexproperty where vid=?");
+        	this.removeVertexStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"delete from vertex where vid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
+        	this.removeVertexPropertiesStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"delete from vertexproperty where vid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
         	
         	// Vertex properties:
         	
-        	this.getVertexPropertyStatement = this.connection.prepareStatement(
-        			"select value from vertexproperty where vid=? and pkey=?");
+        	this.getVertexPropertyStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select value from vertexproperty where vid=? and pkey=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.getVertexPropertyKeysStatement = this.connection.prepareStatement(
-					"select pkey from vertexproperty where vid=?");
+        	this.getVertexPropertyKeysStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select pkey from vertexproperty where vid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.setVertexPropertyStatement = this.connection.prepareStatement(
-        			"replace into vertexproperty values(?,?,?)");
+        	this.setVertexPropertyStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"replace into vertexproperty values(?,?,?)");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.removeVertexPropertyStatement = this.connection.prepareStatement(
-    				"delete from vertexproperty where vid=? and pkey=?");
+        	this.removeVertexPropertyStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"delete from vertexproperty where vid=? and pkey=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
         	
         	// Edges:
         	
-        	this.getEdgeVerticesStatement = this.connection.prepareStatement(
-					"select exists(select * from vertex where vid=?) " +
-        			   "and exists(select * from vertex where vid=?)");
-        	this.addEdgeStatement = this.connection.prepareStatement(
-        			"insert into edge(outid,inid,label) values(?,?,?)");
+        	this.getEdgeVerticesStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select exists(select * from vertex where vid=?) " +
+								"and exists(select * from vertex where vid=?)");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
+        	this.addEdgeStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"insert into edge(outid,inid,label) values(?,?,?)");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.getEdgeStatement = this.connection.prepareStatement(
-        			"select outid,inid,label from edge where eid=?");
+        	this.getEdgeStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select outid,inid,label from edge where eid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
            	
-        	this.getMaxEdgeIdStatement = this.connection.prepareStatement(
-        			"select max(eid) from edge;");
-        	this.getEdgeAfterStatement = this.connection.prepareStatement(
-        			"select eid,outid,inid,label from edge where eid >= ? order by eid limit 1;");
+        	this.getMaxEdgeIdStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select max(eid) from edge;");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
+        	this.getEdgeAfterStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select eid,outid,inid,label from edge where eid >= ? order by eid limit 1;");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.countEdgesStatement = this.connection.prepareStatement(
-        			"select count(*) from edge;");
+        	this.countEdgesStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select count(*) from edge;");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
 
-        	this.removeEdgeStatement = this.connection.prepareStatement(
-        			"delete from edge where eid=?");
-        	this.removeEdgePropertiesStatement = this.connection.prepareStatement(
-        			"delete from edgeproperty where eid=?");
+        	this.removeEdgeStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"delete from edge where eid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
+        	this.removeEdgePropertiesStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"delete from edgeproperty where eid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
         	
         	// Edge properties:
         	
-        	this.getEdgePropertyStatement = this.connection.prepareStatement(
-        			"select value from edgeproperty where eid=? and pkey=?");
+        	this.getEdgePropertyStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select value from edgeproperty where eid=? and pkey=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.getEdgePropertyKeysStatement = this.connection.prepareStatement(
-        			"select pkey from edgeproperty where eid=?");
+        	this.getEdgePropertyKeysStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"select pkey from edgeproperty where eid=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
+       	
+        	this.setEdgePropertyStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"replace into edgeproperty values(?,?,?)");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         	
-        	this.setEdgePropertyStatement = this.connection.prepareStatement(
-        			"replace into edgeproperty values(?,?,?)");
-        	
-        	this.removeEdgePropertyStatement = this.connection.prepareStatement(
-        			"delete from edgeproperty where eid=? and pkey=?");
+        	this.removeEdgePropertyStatement = new ThreadLocal<PreparedStatement>() {
+                protected PreparedStatement initialValue() {
+                	try {
+						return connection.prepareStatement(
+								"delete from edgeproperty where eid=? and pkey=?");
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+                }
+        	};
         			
         	
         	// Disable auto-commit.
@@ -247,7 +430,7 @@ public class SqlGraph implements TransactionalGraph {
     }
 
     // BLUEPRINTS GRAPH INTERFACE
-    protected PreparedStatement addVertexStatement;
+    protected ThreadLocal<PreparedStatement> addVertexStatement;
     public Vertex addVertex(final Object id) {        
         try {
             autoStartTransaction();
@@ -263,7 +446,7 @@ public class SqlGraph implements TransactionalGraph {
         }     
     }
 
-    protected PreparedStatement getVertexStatement;
+    protected ThreadLocal<PreparedStatement> getVertexStatement;
     public Vertex getVertex(final Object id) {
     	if (id == null)
     		throw new IllegalArgumentException("SqlGraph.getVertex(id) cannot be null.");
@@ -279,10 +462,10 @@ public class SqlGraph implements TransactionalGraph {
         return new SqlVertexSequence(this);
     }
     
-    protected PreparedStatement countVerticesStatement;
+    protected ThreadLocal<PreparedStatement> countVerticesStatement;
     public long countVertices() {
     	try {
-			ResultSet rs = countVerticesStatement.executeQuery();
+			ResultSet rs = countVerticesStatement.get().executeQuery();
 			rs.next();
 			long r = rs.getLong(1);
 			rs.close();
@@ -293,8 +476,8 @@ public class SqlGraph implements TransactionalGraph {
     	}
     }
     
-    protected PreparedStatement getMaxVertexIdStatement;
-    protected PreparedStatement getVertexAfterStatement;
+    protected ThreadLocal<PreparedStatement> getMaxVertexIdStatement;
+    protected ThreadLocal<PreparedStatement> getVertexAfterStatement;
     public Vertex getRandomVertex() {
     	try {
     		return SqlVertex.getRandomVertex(this);
@@ -304,8 +487,8 @@ public class SqlGraph implements TransactionalGraph {
     	}
     }
 
-    protected PreparedStatement removeVertexStatement;
-    protected PreparedStatement removeVertexPropertiesStatement;
+    protected ThreadLocal<PreparedStatement> removeVertexStatement;
+    protected ThreadLocal<PreparedStatement> removeVertexPropertiesStatement;
     public void removeVertex(final Vertex vertex) {
         if (vertex == null || vertex.getId() == null)
             return;
@@ -323,13 +506,13 @@ public class SqlGraph implements TransactionalGraph {
         }
     }
     
-    protected PreparedStatement getVertexPropertyStatement;
-    protected PreparedStatement getVertexPropertyKeysStatement;
-    protected PreparedStatement setVertexPropertyStatement;
-    protected PreparedStatement removeVertexPropertyStatement;
+    protected ThreadLocal<PreparedStatement> getVertexPropertyStatement;
+    protected ThreadLocal<PreparedStatement> getVertexPropertyKeysStatement;
+    protected ThreadLocal<PreparedStatement> setVertexPropertyStatement;
+    protected ThreadLocal<PreparedStatement> removeVertexPropertyStatement;
 
-    protected PreparedStatement getEdgeVerticesStatement;
-    protected PreparedStatement addEdgeStatement;
+    protected ThreadLocal<PreparedStatement> getEdgeVerticesStatement;
+    protected ThreadLocal<PreparedStatement> addEdgeStatement;
     public Edge addEdge(
 		final Object id,
 		final Vertex outVertex,
@@ -354,7 +537,7 @@ public class SqlGraph implements TransactionalGraph {
         }
     }
 
-    protected PreparedStatement getEdgeStatement;
+    protected ThreadLocal<PreparedStatement> getEdgeStatement;
     public Edge getEdge(final Object id) {
     	if (id == null)
     		throw new IllegalArgumentException("SqlGraph.getEdge(id) cannot be null.");
@@ -370,10 +553,10 @@ public class SqlGraph implements TransactionalGraph {
         return new SqlEdgeSequence(this);
     }
     
-    protected PreparedStatement countEdgesStatement;
+    protected ThreadLocal<PreparedStatement> countEdgesStatement;
     public long countEdges() {
     	try {
-			ResultSet rs = countEdgesStatement.executeQuery();
+			ResultSet rs = countEdgesStatement.get().executeQuery();
 			rs.next();
 			long r = rs.getLong(1);
 			rs.close();
@@ -384,8 +567,8 @@ public class SqlGraph implements TransactionalGraph {
     	}
     }
     
-    protected PreparedStatement getMaxEdgeIdStatement;
-    protected PreparedStatement getEdgeAfterStatement; 
+    protected ThreadLocal<PreparedStatement> getMaxEdgeIdStatement;
+    protected ThreadLocal<PreparedStatement> getEdgeAfterStatement; 
     public Edge getRandomEdge() {
     	try {
     		return SqlEdge.getRandomEdge(this);
@@ -395,8 +578,8 @@ public class SqlGraph implements TransactionalGraph {
     	}
     }
 
-    protected PreparedStatement removeEdgeStatement;
-    protected PreparedStatement removeEdgePropertiesStatement;
+    protected ThreadLocal<PreparedStatement> removeEdgeStatement;
+    protected ThreadLocal<PreparedStatement> removeEdgePropertiesStatement;
     public void removeEdge(final Edge edge) {
         if (edge == null || edge.getId() == null)
             return;
@@ -414,10 +597,10 @@ public class SqlGraph implements TransactionalGraph {
         }
     }
     
-    protected PreparedStatement getEdgePropertyStatement;
-    protected PreparedStatement getEdgePropertyKeysStatement;
-    protected PreparedStatement setEdgePropertyStatement;
-    protected PreparedStatement removeEdgePropertyStatement;
+    protected ThreadLocal<PreparedStatement> getEdgePropertyStatement;
+    protected ThreadLocal<PreparedStatement> getEdgePropertyKeysStatement;
+    protected ThreadLocal<PreparedStatement> setEdgePropertyStatement;
+    protected ThreadLocal<PreparedStatement> removeEdgePropertyStatement;
     
     public Iterable<Vertex> getShortestPath(final Vertex source, final Vertex target) {
     	return new SqlVertexSequence(this, ((SqlVertex) source).vid, ((SqlVertex) target).vid);

@@ -42,10 +42,21 @@ public class BdbGraph implements Graph {
     protected SecondaryDatabase vertexPropertyDb;
     protected SecondaryDatabase edgePropertyDb;
     
-    // XXX This introduces major concurrency problems - need thread-local storage
-    final public DatabaseEntry key = new DatabaseEntry();
-    final public DatabaseEntry pKey = new DatabaseEntry();
-    final public DatabaseEntry data = new DatabaseEntry();
+    final public ThreadLocal<DatabaseEntry> key = new ThreadLocal<DatabaseEntry>() {
+        protected DatabaseEntry initialValue() {
+            return new DatabaseEntry();
+        }
+    };
+    final public ThreadLocal<DatabaseEntry> pKey = new ThreadLocal<DatabaseEntry>() {
+        protected DatabaseEntry initialValue() {
+            return new DatabaseEntry();
+        }
+    };
+    final public ThreadLocal<DatabaseEntry> data = new ThreadLocal<DatabaseEntry>() {
+        protected DatabaseEntry initialValue() {
+            return new DatabaseEntry();
+        }
+    };
     
 
     /**

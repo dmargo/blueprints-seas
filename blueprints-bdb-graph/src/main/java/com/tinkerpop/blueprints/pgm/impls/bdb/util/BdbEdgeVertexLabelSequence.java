@@ -1,6 +1,7 @@
 package com.tinkerpop.blueprints.pgm.impls.bdb.util;
 
 import com.sleepycat.bind.tuple.LongBinding;
+import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.OperationStatus; 
 import com.sleepycat.db.SecondaryDatabase; 
 import com.sleepycat.db.SecondaryCursor;
@@ -23,14 +24,17 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
     private BdbPrimaryKey storedKey;
     private boolean useStoredKey = false;
     private Set<String> labels;
+    private DatabaseEntry key = new DatabaseEntry();
+    private DatabaseEntry pKey = new DatabaseEntry();
+    private DatabaseEntry data = new DatabaseEntry();
    
     public BdbEdgeVertexLabelSequence(final BdbGraph graph, final SecondaryDatabase secondaryDb, final long id, final String... labels) {      
     	OperationStatus status;
-    	LongBinding.longToEntry(id, graph.key);
+    	LongBinding.longToEntry(id, key);
     	
     	try {
             this.cursor = secondaryDb.openSecondaryCursor(null, null);
-            status = this.cursor.getSearchKey(graph.key, graph.pKey, graph.data, null);
+            status = this.cursor.getSearchKey(key, pKey, data, null);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -44,7 +48,7 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
     		this.labels.add(label);
         
         if (status == OperationStatus.SUCCESS) {
-        	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
+        	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.pKey);
         	this.useStoredKey = this.labels.contains(this.storedKey.label);
     	} else {
         	this.close();
@@ -63,9 +67,9 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	    
 	    while (true) {
 		    try {
-		    	this.graph.key.setPartial(0, 0, true);
-	            status = this.cursor.getNextDup(this.graph.key, this.graph.pKey, this.graph.data, null);
-	            this.graph.key.setPartial(false);
+		    	this.key.setPartial(0, 0, true);
+	            status = this.cursor.getNextDup(this.key, this.pKey, this.data, null);
+	            this.key.setPartial(false);
 		    } catch (RuntimeException e) {
 	            throw e;
 	        } catch (Exception e) {
@@ -73,7 +77,7 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	        }
 	               
 	        if (status == OperationStatus.SUCCESS) {
-	        	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
+	        	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.pKey);
 	        	if (this.labels.contains(this.storedKey.label))
 	        		return new BdbEdge(this.graph, this.storedKey);
 	        } else {
@@ -93,9 +97,9 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	    
 	    while (true) {
 		    try {
-		    	this.graph.key.setPartial(0, 0, true);
-	            status = cursor.getNextDup(this.graph.key, this.graph.pKey, this.graph.data, null);
-	            this.graph.key.setPartial(false);
+		    	this.key.setPartial(0, 0, true);
+	            status = cursor.getNextDup(this.key, this.pKey, this.data, null);
+	            this.key.setPartial(false);
 		    } catch (RuntimeException e) {
 	            throw e;
 	        } catch (Exception e) {
@@ -103,7 +107,7 @@ public class BdbEdgeVertexLabelSequence implements Iterator<Edge>, Iterable<Edge
 	        }
 	               
 	        if (status == OperationStatus.SUCCESS) {
-	        	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.graph.pKey);
+	        	this.storedKey = BdbGraph.primaryKeyBinding.entryToObject(this.pKey);
 	        	if (this.labels.contains(this.storedKey.label)) {
 		        	this.useStoredKey = true;
 		        	return true;

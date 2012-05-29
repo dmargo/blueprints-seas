@@ -2,6 +2,7 @@ package com.tinkerpop.blueprints.pgm.impls.bdb.util;
 
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.db.Cursor;
+import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.OperationStatus; 
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.bdb.BdbGraph;
@@ -19,13 +20,15 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
     private Cursor cursor;    
     private long storedId;
     private boolean useStoredId = false;
+    private DatabaseEntry key = new DatabaseEntry();
+    private DatabaseEntry data = new DatabaseEntry();
     
     public BdbVertexSequence(final BdbGraph graph) {
         OperationStatus status;
     	
         try {
             this.cursor = graph.vertexDb.openCursor(null, null);
-            status = this.cursor.getFirst(graph.key, graph.data, null);
+            status = this.cursor.getFirst(key, data, null);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -35,7 +38,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
         this.graph = graph;
         
         if (status == OperationStatus.SUCCESS) {
-        	this.storedId = LongBinding.entryToLong(this.graph.key);
+        	this.storedId = LongBinding.entryToLong(this.key);
         	this.useStoredId = true;
         } else
         	this.close();
@@ -52,7 +55,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
 	    OperationStatus status;
         
 	    try {
-	        status = this.cursor.getNext(this.graph.key, this.graph.data, null);  	        
+	        status = this.cursor.getNext(this.key, this.data, null);  	        
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -60,7 +63,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
         }
         
         if (status == OperationStatus.SUCCESS)
-        	return new BdbVertex(this.graph, LongBinding.entryToLong(this.graph.key));
+        	return new BdbVertex(this.graph, LongBinding.entryToLong(this.key));
         else {
             this.close();
             throw new NoSuchElementException();
@@ -76,7 +79,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
 	    OperationStatus status;
         
 	    try {
-	        status = this.cursor.getNext(this.graph.key, this.graph.data, null); 	        
+	        status = this.cursor.getNext(this.key, this.data, null); 	        
 	    } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -84,7 +87,7 @@ public class BdbVertexSequence implements Iterator<Vertex>, Iterable<Vertex> {
         }
         
         if (status == OperationStatus.SUCCESS) {
-        	this.storedId = LongBinding.entryToLong(this.graph.key);
+        	this.storedId = LongBinding.entryToLong(this.key);
         	this.useStoredId = true;
         	return true;
         } else {

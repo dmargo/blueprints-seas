@@ -14,8 +14,6 @@ public class SqlGraph implements TransactionalGraph {
 	private String addr = null;
 	public Connection connection = null;
 	
-	// XXX The prepared statements need to be moved to thread-local storage or pools
-	
     private final ThreadLocal<Boolean> tx = new ThreadLocal<Boolean>() {
         protected Boolean initialValue() {
             return false;

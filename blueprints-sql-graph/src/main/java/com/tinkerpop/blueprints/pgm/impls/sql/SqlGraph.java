@@ -4,6 +4,9 @@ import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.impls.sql.util.*;
 
 import java.sql.*;
+import java.util.HashMap;
+import java.util.concurrent.Semaphore;
+
 
 /**
  * A Blueprints implementation of an SQL database (http://www.oracle.com)
@@ -13,6 +16,8 @@ import java.sql.*;
 public class SqlGraph implements TransactionalGraph {
 	private String addr = null;
 	public Connection connection = null;
+	private static Semaphore initSemaphore = new Semaphore(1);
+	private static HashMap<String, Integer> numConnectionsPerAddr = new HashMap<String, Integer>();
 	
     private final ThreadLocal<Boolean> tx = new ThreadLocal<Boolean>() {
         protected Boolean initialValue() {
@@ -39,117 +44,131 @@ public class SqlGraph implements TransactionalGraph {
     	this.addr = addr;
     	
     	try {
+    		initSemaphore.acquire();
+   		
         	Class.forName("com.mysql.jdbc.Driver").newInstance();
             this.connection = DriverManager.getConnection(
             		"jdbc:mysql:" + this.addr + "&autoDeserialize=true");     
             Statement statement = this.connection.createStatement();
             
-            // First, some MySQL housekeeping.
-            statement.executeUpdate(
-            		"DROP PROCEDURE IF EXISTS create_index_if_not_exists");
-        	statement.executeUpdate(
-        			"CREATE PROCEDURE create_index_if_not_exists(theIndex VARCHAR(128), theTable VARCHAR(128), theColumn VARCHAR(129))\r\n" + 
-        			"BEGIN\r\n" + 
-        			"    IF NOT EXISTS (\r\n" + 
-        			"        SELECT *\r\n" + 
-        			"        FROM information_schema.statistics\r\n" + 
-        			"        WHERE table_schema = database()\r\n" + 
-        			"        AND table_name = theTable\r\n" + 
-        			"        AND index_name = theIndex)\r\n" + 
-        			"    THEN\r\n" + 
-        			"        SET @s = CONCAT('CREATE INDEX ',theIndex,' ON ',theTable,' (',theColumn,')');\r\n" + 
-        			"        PREPARE stmt FROM @s;\r\n" + 
-        			"        EXECUTE stmt;\r\n" + 
-        			"    END IF;\r\n" + 
-        			"END;");
-            
-            // Create structure tables.
-            statement.executeUpdate(
-            		"create table if not exists vertex(" +
-            			"vid serial primary key)");
-            
-            statement.executeUpdate(
-            		"create table if not exists edge(" +
-	            		"eid serial primary key," +
-	            		"outid bigint unsigned not null references vertex(vid)," +
-	            		"inid bigint unsigned not null references vertex(vid)," +
-	            		"label varchar(255))");
-            this.connection.prepareCall(
-        			"call create_index_if_not_exists('outid_index', 'edge', 'outid')").executeUpdate();
-            this.connection.prepareCall(
-					"call create_index_if_not_exists('inid_index', 'edge', 'inid')").executeUpdate();
-            this.connection.prepareCall(
-					"call create_index_if_not_exists('label_index', 'edge', 'label')").executeUpdate();
+            if (!numConnectionsPerAddr.containsKey(addr)) {
+            	numConnectionsPerAddr.put(addr, 0);
+            }
 
-            // Create property tables.
-            statement.executeUpdate(
-            		"create table if not exists vertexproperty(" +
-	            		"vid bigint unsigned not null references vertex(vid)," +
-	            		"pkey varchar(255) not null," +
-	            		"value blob," +
-	            		"primary key(vid,pkey))");
-            //this.connection.prepareCall(
-			//		"call create_index_if_not_exists('vertexpkey_index', 'vertexproperty', 'pkey')").executeUpdate();
+
+            //
+            // Set up the database schema and shared procedures
+            //
             
-            statement.executeUpdate(
-            		"create table if not exists edgeproperty(" +
-	            		"eid bigint unsigned not null references edge(eid)," +
-	            		"pkey varchar(255) not null," +
-	            		"value blob," +
-	            		"primary key(eid,pkey))");
-            //this.connection.prepareCall(
-			//		"call create_index_if_not_exists('edgepkey_index', 'edgeproperty', 'pkey')").executeUpdate();
-        	
-        	// Create the shortest path procedure.
-            statement.executeUpdate("DROP PROCEDURE IF EXISTS dijkstra");
-        	statement.executeUpdate(
-        			"CREATE PROCEDURE dijkstra(sourceid BIGINT UNSIGNED, targetid BIGINT UNSIGNED)\r\n" + 
-        			"BEGIN\r\n" + 
-        			"    DECLARE currid BIGINT UNSIGNED;\r\n" + 
-        			"    DROP TEMPORARY TABLE IF EXISTS paths;\r\n" + 
-        			"    CREATE TEMPORARY TABLE paths (\r\n" + 
-        			"        vid BIGINT UNSIGNED NOT NULL PRIMARY KEY,\r\n" + 
-        			"        calc TINYINT UNSIGNED NOT NULL,\r\n" + 
-        			"        prev BIGINT UNSIGNED\r\n" + 
-        			"    );\r\n" + 
-        			"\r\n" + 
-        			"    INSERT INTO paths (vid, calc, prev) VALUES (sourceid, 0, NULL);\r\n" + 
-        			"    SET currid = sourceid;\r\n" + 
-        			"    WHILE currid IS NOT NULL DO\r\n" + 
-        			"    BEGIN\r\n" + 
-        			"        INSERT IGNORE INTO paths (vid, calc, prev)\r\n" + 
-        			"        SELECT inid, 0, currid\r\n" + 
-        			"        FROM edge\r\n" + 
-        			"        WHERE currid = outid;\r\n" + 
-        			"\r\n" + 
-        			"        UPDATE paths SET calc = 1 WHERE currid = vid;\r\n" + 
-        			"\r\n" + 
-        			"        IF EXISTS (SELECT vid FROM paths WHERE targetid = vid LIMIT 1)\r\n" + 
-        			"        THEN\r\n" + 
-        			"            SET currid = NULL;\r\n" + 
-        			"        ELSE\r\n" + 
-        			"            SET currid = (SELECT vid FROM paths WHERE calc = 0 LIMIT 1);\r\n" + 
-        			"        END IF;\r\n" + 
-        			"    END;\r\n" + 
-        			"    END WHILE;\r\n" + 
-        			"\r\n" + 
-        			"    DROP TEMPORARY TABLE IF EXISTS result;\r\n" + 
-        			"    CREATE TEMPORARY TABLE result (\r\n" + 
-        			"        vid BIGINT UNSIGNED NOT NULL PRIMARY KEY\r\n" + 
-        			"    );\r\n" + 
-        			"\r\n" + 
-        			"    SET currid = targetid;\r\n" + 
-        			"    WHILE currid IS NOT NULL DO\r\n" + 
-        			"    BEGIN\r\n" + 
-        			"        INSERT INTO result (vid) VALUES (currid);\r\n" + 
-        			"        SET currid = (SELECT prev FROM paths WHERE currid = vid LIMIT 1);\r\n" + 
-        			"    END;\r\n" + 
-        			"    END WHILE;\r\n" + 
-        			"\r\n" + 
-        			"    SELECT vid FROM result;\r\n" + 
-        			"END;");
-        	statement.close();
-        	
+            if (numConnectionsPerAddr.get(addr) <= 0) {
+	            
+	            // First, some MySQL housekeeping.
+	            statement.executeUpdate(
+	            		"DROP PROCEDURE IF EXISTS create_index_if_not_exists");
+	        	statement.executeUpdate(
+	        			"CREATE PROCEDURE create_index_if_not_exists(theIndex VARCHAR(128), theTable VARCHAR(128), theColumn VARCHAR(129))\r\n" + 
+	        			"BEGIN\r\n" + 
+	        			"    IF NOT EXISTS (\r\n" + 
+	        			"        SELECT *\r\n" + 
+	        			"        FROM information_schema.statistics\r\n" + 
+	        			"        WHERE table_schema = database()\r\n" + 
+	        			"        AND table_name = theTable\r\n" + 
+	        			"        AND index_name = theIndex)\r\n" + 
+	        			"    THEN\r\n" + 
+	        			"        SET @s = CONCAT('CREATE INDEX ',theIndex,' ON ',theTable,' (',theColumn,')');\r\n" + 
+	        			"        PREPARE stmt FROM @s;\r\n" + 
+	        			"        EXECUTE stmt;\r\n" + 
+	        			"    END IF;\r\n" + 
+	        			"END;");
+	            
+	            // Create structure tables.
+	            statement.executeUpdate(
+	            		"create table if not exists vertex(" +
+	            			"vid serial primary key)");
+	            
+	            statement.executeUpdate(
+	            		"create table if not exists edge(" +
+		            		"eid serial primary key," +
+		            		"outid bigint unsigned not null references vertex(vid)," +
+		            		"inid bigint unsigned not null references vertex(vid)," +
+		            		"label varchar(255))");
+	            this.connection.prepareCall(
+	        			"call create_index_if_not_exists('outid_index', 'edge', 'outid')").executeUpdate();
+	            this.connection.prepareCall(
+						"call create_index_if_not_exists('inid_index', 'edge', 'inid')").executeUpdate();
+	            this.connection.prepareCall(
+						"call create_index_if_not_exists('label_index', 'edge', 'label')").executeUpdate();
+	
+	            // Create property tables.
+	            statement.executeUpdate(
+	            		"create table if not exists vertexproperty(" +
+		            		"vid bigint unsigned not null references vertex(vid)," +
+		            		"pkey varchar(255) not null," +
+		            		"value blob," +
+		            		"primary key(vid,pkey))");
+	            //this.connection.prepareCall(
+				//		"call create_index_if_not_exists('vertexpkey_index', 'vertexproperty', 'pkey')").executeUpdate();
+	            
+	            statement.executeUpdate(
+	            		"create table if not exists edgeproperty(" +
+		            		"eid bigint unsigned not null references edge(eid)," +
+		            		"pkey varchar(255) not null," +
+		            		"value blob," +
+		            		"primary key(eid,pkey))");
+	            //this.connection.prepareCall(
+				//		"call create_index_if_not_exists('edgepkey_index', 'edgeproperty', 'pkey')").executeUpdate();
+	        	
+	        	// Create the shortest path procedure.
+	            statement.executeUpdate("DROP PROCEDURE IF EXISTS dijkstra");
+	        	statement.executeUpdate(
+	        			"CREATE PROCEDURE dijkstra(sourceid BIGINT UNSIGNED, targetid BIGINT UNSIGNED)\r\n" + 
+	        			"BEGIN\r\n" + 
+	        			"    DECLARE currid BIGINT UNSIGNED;\r\n" + 
+	        			"    DROP TEMPORARY TABLE IF EXISTS paths;\r\n" + 
+	        			"    CREATE TEMPORARY TABLE paths (\r\n" + 
+	        			"        vid BIGINT UNSIGNED NOT NULL PRIMARY KEY,\r\n" + 
+	        			"        calc TINYINT UNSIGNED NOT NULL,\r\n" + 
+	        			"        prev BIGINT UNSIGNED\r\n" + 
+	        			"    );\r\n" + 
+	        			"\r\n" + 
+	        			"    INSERT INTO paths (vid, calc, prev) VALUES (sourceid, 0, NULL);\r\n" + 
+	        			"    SET currid = sourceid;\r\n" + 
+	        			"    WHILE currid IS NOT NULL DO\r\n" + 
+	        			"    BEGIN\r\n" + 
+	        			"        INSERT IGNORE INTO paths (vid, calc, prev)\r\n" + 
+	        			"        SELECT inid, 0, currid\r\n" + 
+	        			"        FROM edge\r\n" + 
+	        			"        WHERE currid = outid;\r\n" + 
+	        			"\r\n" + 
+	        			"        UPDATE paths SET calc = 1 WHERE currid = vid;\r\n" + 
+	        			"\r\n" + 
+	        			"        IF EXISTS (SELECT vid FROM paths WHERE targetid = vid LIMIT 1)\r\n" + 
+	        			"        THEN\r\n" + 
+	        			"            SET currid = NULL;\r\n" + 
+	        			"        ELSE\r\n" + 
+	        			"            SET currid = (SELECT vid FROM paths WHERE calc = 0 LIMIT 1);\r\n" + 
+	        			"        END IF;\r\n" + 
+	        			"    END;\r\n" + 
+	        			"    END WHILE;\r\n" + 
+	        			"\r\n" + 
+	        			"    DROP TEMPORARY TABLE IF EXISTS result;\r\n" + 
+	        			"    CREATE TEMPORARY TABLE result (\r\n" + 
+	        			"        vid BIGINT UNSIGNED NOT NULL PRIMARY KEY\r\n" + 
+	        			"    );\r\n" + 
+	        			"\r\n" + 
+	        			"    SET currid = targetid;\r\n" + 
+	        			"    WHILE currid IS NOT NULL DO\r\n" + 
+	        			"    BEGIN\r\n" + 
+	        			"        INSERT INTO result (vid) VALUES (currid);\r\n" + 
+	        			"        SET currid = (SELECT prev FROM paths WHERE currid = vid LIMIT 1);\r\n" + 
+	        			"    END;\r\n" + 
+	        			"    END WHILE;\r\n" + 
+	        			"\r\n" + 
+	        			"    SELECT vid FROM result;\r\n" + 
+	        			"END;");
+	        	statement.close();
+            }
+            
         	
         	//
         	// Create prepared statements.
@@ -420,11 +439,19 @@ public class SqlGraph implements TransactionalGraph {
         	
             connection.setAutoCommit(false);
             
-       } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }        
+            
+            // Finish
+            
+            numConnectionsPerAddr.put(addr, numConnectionsPerAddr.get(addr) + 1);
+            initSemaphore.release();
+
+    	} catch (RuntimeException e) {
+    		initSemaphore.release();
+    		throw e;
+    	} catch (Exception e) {
+    		initSemaphore.release();
+    		throw new RuntimeException(e.getMessage(), e);
+    	}
     }
 
     // BLUEPRINTS GRAPH INTERFACE
@@ -628,6 +655,10 @@ public class SqlGraph implements TransactionalGraph {
         	statement.executeUpdate("drop table vertex");
     		statement.close();
     		this.connection.close();
+    		
+    		initSemaphore.acquire();
+    		numConnectionsPerAddr.put(addr, numConnectionsPerAddr.get(addr) - 1);
+    		initSemaphore.release();
     	} catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -644,8 +675,13 @@ public class SqlGraph implements TransactionalGraph {
 			}
             tx.set(false);
         }
+        
         try {
     		this.connection.close();
+    		
+    		initSemaphore.acquire();
+    		numConnectionsPerAddr.put(addr, numConnectionsPerAddr.get(addr) - 1);
+    		initSemaphore.release();
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
